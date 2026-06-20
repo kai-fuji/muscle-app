@@ -14,10 +14,10 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { date, weight, bodyFat } = req.body
+      const { date, weight, body_fat_percentage } = req.body
       await db.execute({
         sql: 'INSERT OR REPLACE INTO body_data (date, weight, body_fat) VALUES (?, ?, ?)',
-        args: [date, weight, bodyFat]
+        args: [date, weight, body_fat_percentage]
       })
       res.status(200).json({ message: '保存しました' })
     } catch (error) {

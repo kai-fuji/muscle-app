@@ -14,7 +14,12 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { date, time, meal, calories, protein, fat, carbs, fiber } = req.body
+      const { date, calories, protein, fat, carbs, sugar } = req.body
+      // time と meal を自動生成
+      const time = new Date().toTimeString().slice(0, 8) // HH:MM:SS
+      const meal = '食事'
+      const fiber = sugar || 0 // sugar を fiber として保存（暫定）
+      
       await db.execute({
         sql: `INSERT INTO nutrition (date, time, meal, calories, protein, fat, carbs, fiber)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
