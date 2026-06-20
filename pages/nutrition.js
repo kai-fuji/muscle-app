@@ -214,7 +214,14 @@ export default function Nutrition() {
           />
         </div>
         <p className="text-white/80 text-sm mt-2">
-          {todayProgress >= 100 ? '<CheckIcon size={16} className="inline mr-1" />目標達成！' : `残り ${targetCalories - (stats.today?.calories || 0)}kcal`}
+          {todayProgress >= 100 ? (
+            <span>
+              <CheckIcon size={16} className="inline mr-1" />
+              目標達成！
+            </span>
+          ) : (
+            `残り ${targetCalories - (stats.today?.calories || 0)}kcal`
+          )}
         </p>
 
         {/* PFCバランス表示 */}
@@ -345,16 +352,16 @@ export default function Nutrition() {
         </Card>
       )}
 
-      {/* データがない場合 */}
-      {data.length === 0 && !showForm && (
+      {/* データがない場合のメッセージ */}
+      {data.length === 0 && (
         <Card>
           <div className="text-center py-12">
-            <div className="text-6xl mb-4"><NutritionIcon size={64} className="text-gray-400" /></div>
-            <h3 className="text-xl font-bold text-gray-100 mb-2">
+            <div className="text-6xl mb-4">🍽️</div>
+            <h3 className="text-xl font-bold text-white mb-2">
               まだデータがありません
             </h3>
-            <p className="text-gray-400 mb-6">
-              毎日の栄養摂取を記録しましょう
+            <p className="text-gray-400">
+              今日の栄養データを記録してみましょう
             </p>
           </div>
         </Card>

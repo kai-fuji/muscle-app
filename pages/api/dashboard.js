@@ -20,9 +20,9 @@ export default async function handler(req, res) {
     const totalFat = todayNutrition.reduce((sum, n) => sum + (n.fat || 0), 0)
     const totalCarbs = todayNutrition.reduce((sum, n) => sum + (n.carbs || 0), 0)
 
-    // 今日のトレーニング
+    // 今日のトレーニング（種目ごとのセット数）
     const trainingResult = await db.execute({
-      sql: 'SELECT exercise, SUM(sets) as sets FROM training WHERE date = ? GROUP BY exercise',
+      sql: 'SELECT exercise as name, COUNT(*) as sets FROM training WHERE date = ? GROUP BY exercise',
       args: [today]
     })
     const todayTraining = trainingResult.rows
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
     // 全期間の種目別トータルセット数（TOP 5）
     const topExercisesResult = await db.execute(`
-      SELECT exercise, SUM(sets) as total_sets 
+      SELECT exercise, COUNT(*) as total_sets 
       FROM training 
       GROUP BY exercise 
       ORDER BY total_sets DESC 

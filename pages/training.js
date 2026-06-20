@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from 'react'
 import Card from '../components/Card'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format } from 'date-fns'
-import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon } from '../components/Icons'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon, CalendarIcon, BarChartIcon, ListIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons'
 
 export default function Training() {
   const [data, setData] = useState([])
@@ -17,6 +18,13 @@ export default function Training() {
     sets: [{ weight: '', reps: '', negative: 3 }],
     interval_seconds: 60
   })
+
+  // カレンダー・グラフ関連のstate
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [view, setView] = useState('calendar')
+  const [selectedExercise, setSelectedExercise] = useState(null)
+  const [graphPeriod, setGraphPeriod] = useState('all') // 'all', '3months', '6months', '1year'
 
   // タイマー関連のstate
   const [timerWidgetExpanded, setTimerWidgetExpanded] = useState(false)
@@ -132,10 +140,22 @@ export default function Training() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+
   const fetchData = async () => {
     try {
       const res = await fetch('/api/training')
       const json = await res.json()
+      
+      console.log('🏋️ Training page - Fetched data:', json)
+      console.log('🏋️ Training page - Total entries:', json.length)
+      if (json.length > 0) {
+        console.log('🏋️ Training page - First entry:', JSON.stringify(json[0], null, 2))
+        console.log('🏋️ Training page - First entry sets:', json[0].sets)
+        if (json[0].sets && json[0].sets.length > 0) {
+          console.log('🏋️ Training page - First set detail:', json[0].sets[0])
+        }
+      }
+      
       setData(json)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -254,22 +274,56 @@ export default function Training() {
     setFormData({ ...formData, sets: newSets })
   }
 
-  const stats = {
-    totalWorkouts: data.length,
-    totalSets: data.reduce((sum, d) => sum + d.sets.length, 0),
-    favoriteExercise: data.length > 0 
-      ? Object.entries(
-          data.reduce((acc, d) => {
-            acc[d.exercise] = (acc[d.exercise] || 0) + 1
-            return acc
-          }, {})
-        ).sort((a, b) => b[1] - a[1])[0]?.[0] || 'なし'
-      : 'なし'
+  // カレンダー用の関数
+  const getWorkoutsForDate = (date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    return data.filter(item => item.date === dateStr)
   }
+
+  // グラフ用の関数（期間フィルター付き）
+  const getExerciseHistory = (exerciseName) => {
+    let filteredData = data.filter(item => item.exercise === exerciseName)
+    
+    // 期間フィルター
+    const now = new Date()
+    if (graphPeriod === '3months') {
+      const threeMonthsAgo = subMonths(now, 3)
+      filteredData = filteredData.filter(item => new Date(item.date) >= threeMonthsAgo)
+    } else if (graphPeriod === '6months') {
+      const sixMonthsAgo = subMonths(now, 6)
+      filteredData = filteredData.filter(item => new Date(item.date) >= sixMonthsAgo)
+    } else if (graphPeriod === '1year') {
+      const oneYearAgo = subMonths(now, 12)
+      filteredData = filteredData.filter(item => new Date(item.date) >= oneYearAgo)
+    }
+    
+    return filteredData
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map(item => ({
+        date: item.date,
+        maxWeight: Math.max(...item.sets.map(s => s.weight)),
+        totalReps: item.sets.reduce((sum, s) => sum + s.reps, 0),
+        sets: item.sets.length
+      }))
+  }
+
+  // カレンダー設定
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
+  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const startDay = monthStart.getDay()
+  const paddingDays = startDay === 0 ? 6 : startDay - 1
 
   const getExerciseName = (ex) => {
     return typeof ex === 'string' ? ex : ex.name
   }
+
+  // 日付順にソート（新しい順）
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = new Date(a.datetime || a.date)
+    const dateB = new Date(b.datetime || b.date)
+    return dateB - dateA // 新しい順
+  })
 
   return (
     <div>
@@ -600,96 +654,313 @@ export default function Training() {
         )}
       </AnimatePresence>
 
-      {/* 統計カード（視認性改善） */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#00D9FF20', color: '#00D9FF' }}>
-              <DumbbellIcon size={24} />
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">トレーニング回数</div>
-              <div className="text-3xl font-bold text-white">{stats.totalWorkouts}</div>
-            </div>
-          </div>
-          <div className="text-xs text-gray-500">total workouts</div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#FF950020', color: '#FF9500' }}>
-              <TrainingIcon size={24} />
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">総セット数</div>
-              <div className="text-3xl font-bold text-white">{stats.totalSets}</div>
-            </div>
-          </div>
-          <div className="text-xs text-gray-500">total sets</div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#5E5CE620', color: '#5E5CE6' }}>
-              <StarIcon size={24} />
-            </div>
-            <div>
-              <div className="text-sm text-gray-400">人気種目</div>
-              <div className="text-xl font-bold text-white truncate">{stats.favoriteExercise}</div>
-            </div>
-          </div>
-          <div className="text-xs text-gray-500">most trained</div>
-        </div>
+      {/* ビュー切り替えタブ */}
+      <div className="flex space-x-2 mb-6">
+        <button
+          onClick={() => setView('calendar')}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
+            view === 'calendar'
+              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
+              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+          }`}
+        >
+          <CalendarIcon size={20} />
+          <span>カレンダー</span>
+        </button>
+        <button
+          onClick={() => setView('graph')}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
+            view === 'graph'
+              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
+              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+          }`}
+        >
+          <BarChartIcon size={20} />
+          <span>グラフ</span>
+        </button>
+        <button
+          onClick={() => setView('list')}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
+            view === 'list'
+              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
+              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+          }`}
+        >
+          <ListIcon size={20} />
+          <span>リスト</span>
+        </button>
       </div>
 
-      {/* 履歴リスト */}
-      {data.length > 0 && (
+      {/* カレンダービュー */}
+      {view === 'calendar' && (
+        <Card>
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-slate-700 rounded-lg transition"
+            >
+              <ChevronLeftIcon size={24} className="text-gray-400" />
+            </button>
+            <h2 className="text-2xl font-bold text-white">
+              {format(currentMonth, 'yyyy年 M月', { locale: ja })}
+            </h2>
+            <button
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-slate-700 rounded-lg transition"
+            >
+              <ChevronRightIcon size={24} className="text-gray-400" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            {['月', '火', '水', '木', '金', '土', '日'].map(day => (
+              <div key={day} className="text-center text-gray-400 font-semibold p-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: paddingDays }).map((_, i) => (
+              <div key={`padding-${i}`} className="aspect-square" />
+            ))}
+
+            {monthDays.map(day => {
+              const workouts = getWorkoutsForDate(day)
+              const isToday = isSameDay(day, new Date())
+              const hasWorkout = workouts.length > 0
+
+              return (
+                <motion.div
+                  key={day.toISOString()}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setSelectedDate(day)}
+                  className={`aspect-square p-2 rounded-xl cursor-pointer transition-all border-2 ${
+                    isToday
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : hasWorkout
+                      ? 'border-green-500/50 bg-green-500/10'
+                      : 'border-slate-700 bg-slate-800 hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="text-sm font-semibold text-white mb-1">
+                    {format(day, 'd')}
+                  </div>
+                  {hasWorkout && (
+                    <div className="space-y-1">
+                      {workouts.slice(0, 2).map((workout, idx) => (
+                        <div
+                          key={idx}
+                          className="text-xs bg-green-600/20 text-green-400 px-1 py-0.5 rounded truncate"
+                          title={workout.exercise}
+                        >
+                          {workout.exercise.slice(0, 6)}
+                        </div>
+                      ))}
+                      {workouts.length > 2 && (
+                        <div className="text-xs text-gray-400">
+                          +{workouts.length - 2}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {selectedDate && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-700"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">
+                  {format(selectedDate, 'M月d日(E)', { locale: ja })} のトレーニング
+                </h3>
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {getWorkoutsForDate(selectedDate).map((workout, idx) => (
+                <div key={idx} className="mb-4 p-3 bg-slate-800 rounded-lg">
+                  <h4 className="font-bold text-white mb-2">
+                    {workout.exercise}
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                    {workout.sets.map((set, setIdx) => (
+                      <div
+                        key={setIdx}
+                        className="bg-slate-900 p-2 rounded text-center"
+                      >
+                        <div className="text-cyan-400 font-bold">
+                          {set.weight}kg × {set.reps}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          Set {setIdx + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(workout)}
+                      className="flex-1 border-2 border-blue-500 text-blue-400 hover:bg-blue-500/10 px-3 py-1 rounded text-sm transition-all"
+                    >
+                      編集
+                    </button>
+                    <button
+                      onClick={() => handleDelete(workout.datetime)}
+                      className="flex-1 border-2 border-red-500 text-red-400 hover:bg-red-500/10 px-3 py-1 rounded text-sm transition-all"
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {getWorkoutsForDate(selectedDate).length === 0 && (
+                <p className="text-gray-400">この日のトレーニングはありません</p>
+              )}
+            </motion.div>
+          )}
+        </Card>
+      )}
+
+      {/* グラフビュー */}
+      {view === 'graph' && (
+        <div className="space-y-6">
+          <Card>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white">種目を選択</h3>
+              
+              {/* 期間フィルター */}
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setGraphPeriod('all')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                    graphPeriod === 'all'
+                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+                  }`}
+                >
+                  全期間
+                </button>
+                <button
+                  onClick={() => setGraphPeriod('3months')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                    graphPeriod === '3months'
+                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+                  }`}
+                >
+                  3ヶ月
+                </button>
+                <button
+                  onClick={() => setGraphPeriod('6months')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                    graphPeriod === '6months'
+                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+                  }`}
+                >
+                  6ヶ月
+                </button>
+                <button
+                  onClick={() => setGraphPeriod('1year')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                    graphPeriod === '1year'
+                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+                  }`}
+                >
+                  1年
+                </button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[...new Set(data.map(d => d.exercise))].map(exercise => (
+                <button
+                  key={exercise}
+                  onClick={() => setSelectedExercise(exercise)}
+                  className={`p-3 rounded-xl font-semibold transition-all ${
+                    selectedExercise === exercise
+                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
+                  }`}
+                >
+                  {exercise}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {selectedExercise && (
+            <Card title={`${selectedExercise} の進捗`}>
+              <ExerciseProgressChart
+                data={getExerciseHistory(selectedExercise)}
+                exercise={selectedExercise}
+              />
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* リストビュー */}
+      {view === 'list' && (
         <Card title="トレーニング履歴">
           <div className="space-y-4">
-            {data.slice().reverse().slice(0, 10).map((entry, index) => (
+            {sortedData.map((entry, index) => (
               <motion.div
-                key={index}
+                key={entry.datetime || index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border-b border-gray-100 pb-4 last:border-0"
+                className="border-b border-slate-700 pb-4 last:border-0"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="font-bold text-lg text-gray-800">
+                    <div className="font-bold text-lg text-white">
                       {entry.exercise}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-400">
                       {format(new Date(entry.date), 'yyyy年M月d日')}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-400">
                       インターバル: {entry.interval_seconds}秒
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(entry)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50"
+                        className="text-blue-400 hover:text-blue-300 text-xs font-medium px-2 py-1 rounded hover:bg-blue-500/10"
                       >
                         編集
                       </button>
                       <button
                         onClick={() => handleDelete(entry.datetime)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded hover:bg-red-50"
+                        className="text-red-400 hover:text-red-300 text-xs font-medium px-2 py-1 rounded hover:bg-red-500/10"
                       >
                         削除
                       </button>
                     </div>
                   </div>
                 </div>
+
                 <div className="space-y-1">
                   {entry.sets.map((set, setIndex) => (
                     <div key={setIndex} className="flex items-center text-sm">
-                      <span className="w-16 text-gray-500">第{setIndex + 1}セット</span>
-                      <span className="font-medium text-gray-800">
+                      <span className="w-16 text-gray-400">第{setIndex + 1}セット</span>
+                      <span className="font-medium text-gray-300">
                         {set.weight}kg × {set.reps}回
-                        {set.negative && <span className="text-gray-500 ml-2">(ネガ: {set.negative}秒)</span>}
+                        {set.negative && <span className="text-gray-400 ml-2">(ネガ: {set.negative}秒)</span>}
                       </span>
                     </div>
                   ))}
@@ -705,10 +976,10 @@ export default function Training() {
         <Card>
           <div className="text-center py-12">
             <div className="text-6xl mb-4"><DumbbellIcon size={64} className="text-gray-400" /></div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
+            <h3 className="text-xl font-bold text-white mb-2">
               まだデータがありません
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-400 mb-6">
               トレーニングを記録して進捗を追跡しましょう
             </p>
           </div>
@@ -717,6 +988,150 @@ export default function Training() {
 
       {/* 音声ファイル */}
       <audio ref={audioRef} src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBi2Ly/DWhzMHHm7A7+OZURE" />
+    </div>
+  )
+}
+
+// Exercise Progress Chart Component
+function ExerciseProgressChart({ data, exercise }) {
+  if (!data || data.length === 0) {
+    return <p className="text-gray-400">データがありません</p>
+  }
+
+  const width = 800
+  const height = 400
+  const margin = { top: 20, right: 60, bottom: 60, left: 60 }
+  const chartWidth = width - margin.left - margin.right
+  const chartHeight = height - margin.top - margin.bottom
+
+  const maxWeight = Math.max(...data.map(d => d.maxWeight))
+  const maxReps = Math.max(...data.map(d => d.totalReps))
+
+  const xScale = (index) => data.length === 1 ? chartWidth / 2 : (chartWidth / (data.length - 1)) * index
+  const yScaleWeight = (value) => chartHeight - (value / maxWeight) * chartHeight
+  const yScaleReps = (value) => chartHeight - (value / maxReps) * chartHeight
+
+  const weightLine = data
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleWeight(d.maxWeight)}`)
+    .join(' ')
+
+  const repsLine = data
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleReps(d.totalReps)}`)
+    .join(' ')
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={width} height={height} className="mx-auto">
+        <g transform={`translate(${margin.left}, ${margin.top})`}>
+          {[0, 0.25, 0.5, 0.75, 1].map(ratio => (
+            <line
+              key={ratio}
+              x1={0}
+              y1={chartHeight * ratio}
+              x2={chartWidth}
+              y2={chartHeight * ratio}
+              stroke="#374151"
+              strokeWidth={1}
+              strokeDasharray="4"
+            />
+          ))}
+
+          <path d={weightLine} fill="none" stroke="#06b6d4" strokeWidth={3} />
+          {data.map((d, i) => (
+            <g key={`weight-${i}`}>
+              <circle cx={xScale(i)} cy={yScaleWeight(d.maxWeight)} r={5} fill="#06b6d4" />
+              <text
+                x={xScale(i)}
+                y={yScaleWeight(d.maxWeight) - 10}
+                textAnchor="middle"
+                fill="#06b6d4"
+                fontSize="12"
+                fontWeight="bold"
+              >
+                {d.maxWeight}kg
+              </text>
+            </g>
+          ))}
+
+          <path d={repsLine} fill="none" stroke="#f59e0b" strokeWidth={3} />
+          {data.map((d, i) => (
+            <g key={`reps-${i}`}>
+              <circle cx={xScale(i)} cy={yScaleReps(d.totalReps)} r={5} fill="#f59e0b" />
+              <text
+                x={xScale(i)}
+                y={yScaleReps(d.totalReps) + 20}
+                textAnchor="middle"
+                fill="#f59e0b"
+                fontSize="12"
+                fontWeight="bold"
+              >
+                {d.totalReps}回
+              </text>
+            </g>
+          ))}
+
+          {data.map((d, i) => (
+            <text
+              key={`date-${i}`}
+              x={xScale(i)}
+              y={chartHeight + 30}
+              textAnchor="middle"
+              fill="#9ca3af"
+              fontSize="11"
+            >
+              {format(new Date(d.date), 'M/d')}
+            </text>
+          ))}
+
+          <text x={-margin.left + 10} y={-5} fill="#06b6d4" fontSize="12" fontWeight="bold">
+            重量 (kg)
+          </text>
+          <text
+            x={chartWidth + margin.right - 10}
+            y={-5}
+            fill="#f59e0b"
+            fontSize="12"
+            fontWeight="bold"
+            textAnchor="end"
+          >
+            総回数
+          </text>
+        </g>
+      </svg>
+
+      <div className="flex justify-center space-x-6 mt-4">
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-cyan-500 rounded mr-2"></div>
+          <span className="text-gray-400">最大重量 (kg)</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-orange-500 rounded mr-2"></div>
+          <span className="text-gray-400">総回数</span>
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-700">
+              <th className="text-left p-2 text-gray-400">日付</th>
+              <th className="text-left p-2 text-gray-400">最大重量</th>
+              <th className="text-left p-2 text-gray-400">総回数</th>
+              <th className="text-left p-2 text-gray-400">セット数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d, i) => (
+              <tr key={i} className="border-b border-slate-700/50">
+                <td className="p-2 text-white">{d.date}</td>
+                <td className="p-2 text-cyan-400 font-bold">{d.maxWeight} kg</td>
+                <td className="p-2 text-orange-400 font-bold">{d.totalReps} 回</td>
+                <td className="p-2 text-gray-400">{d.sets}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

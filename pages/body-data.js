@@ -34,11 +34,7 @@ export default function BodyData() {
     e.preventDefault()
     
     try {
-      const url = editingDate 
-        ? `/api/body-data/${editingDate}`
-        : '/api/body-data'
-      
-      const res = await fetch(url, {
+      const res = await fetch('/api/body-data', {
         method: editingDate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,8 +63,8 @@ export default function BodyData() {
     setEditingDate(entry.date)
     setFormData({
       date: entry.date,
-      weight: entry.weight.toString(),
-      body_fat_percentage: entry.body_fat_percentage.toString()
+      weight: entry.weight != null ? entry.weight.toString() : '',
+      body_fat_percentage: entry.body_fat_percentage != null ? entry.body_fat_percentage.toString() : ''
     })
     setShowForm(true)
   }
@@ -77,7 +73,7 @@ export default function BodyData() {
     if (!confirm('このデータを削除しますか？')) return
     
     try {
-      const res = await fetch(`/api/body-data/${date}`, {
+      const res = await fetch(`/api/body-data?date=${date}`, {
         method: 'DELETE'
       })
       
@@ -200,7 +196,7 @@ export default function BodyData() {
             </div>
             <div>
               <div className="flex items-baseline">
-                <span className="text-5xl font-bold">{stats.latest.body_fat_percentage}</span>
+                <span className="text-5xl font-bold">{stats.latest.body_fat_percentage || '-'}</span>
                 <span className="text-xl ml-2 text-white/80">%</span>
               </div>
               <p className="text-white/80 text-sm mt-1">体脂肪率</p>
@@ -274,7 +270,7 @@ export default function BodyData() {
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <div className="font-bold text-gray-100">{entry.weight}kg</div>
-                    <div className="text-sm text-gray-400">{entry.body_fat_percentage}%</div>
+                    <div className="text-sm text-gray-400">{entry.body_fat_percentage || '-'}%</div>
                   </div>
                   <div className="flex gap-2">
                     <button

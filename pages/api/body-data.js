@@ -6,17 +6,17 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const result = await db.execute('SELECT * FROM body_data ORDER BY date DESC')
+      const result = await db.execute('SELECT date, weight, body_fat as body_fat_percentage FROM body_data ORDER BY date DESC')
       res.status(200).json(result.rows || [])
     } catch (error) {
       console.error('Error fetching body data:', error)
       res.status(500).json({ error: 'データの取得に失敗しました' })
     }
-  } else if (req.method === 'POST') {
+  } else if (req.method === 'POST' || req.method === 'PUT') {
     try {
       const { date, weight, body_fat_percentage } = req.body
       
-      console.log('Received body-data POST:', { date, weight, body_fat_percentage })
+      console.log(`Received body-data ${req.method}:`, { date, weight, body_fat_percentage })
       
       // 値の検証
       if (!date || weight === undefined || weight === null || weight === '') {
@@ -55,7 +55,11 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'DELETE') {
     try {
-      const { date } = req.query
+      // クエリパラメータとボディの両方をサポート
+      const date = req.query.date || req.body.date
+      if (!date) {
+        return res.status(400).json({ error: '日付が指定されていません' })
+      }
       await db.execute({
         sql: 'DELETE FROM body_data WHERE date = ?',
         args: [date]
