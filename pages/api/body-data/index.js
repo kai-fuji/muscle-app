@@ -1,17 +1,17 @@
 // pages/api/body-data/index.js
 import { getAllBodyData, addBodyData } from '../../../lib/db'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const data = getAllBodyData()
-      return res.status(200).json(data)
+      const data = await getAllBodyData()
+      return res.status(200).json(data || [])
     }
 
     if (req.method === 'POST') {
-      const newEntry = req.body
-      const result = addBodyData(newEntry)
-      return res.status(200).json({ success: true, data: result })
+      const { date, weight, body_fat } = req.body
+      await addBodyData(date, weight, body_fat)
+      return res.status(200).json({ success: true })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

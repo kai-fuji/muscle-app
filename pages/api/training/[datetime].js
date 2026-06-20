@@ -1,30 +1,21 @@
 // pages/api/training/[datetime].js
 import { updateTrainingData, deleteTrainingData } from '../../../lib/db'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { datetime } = req.query
   const decodedDatetime = decodeURIComponent(datetime)
 
   try {
     if (req.method === 'PUT') {
-      const updatedEntry = req.body
-      const success = updateTrainingData(decodedDatetime, updatedEntry)
-      
-      if (success) {
-        return res.status(200).json({ success: true, data: updatedEntry })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
+      const { date, time, exercise, sets, reps, weight } = req.body
+      await updateTrainingData(date, time, exercise, sets, reps, weight)
+      return res.status(200).json({ success: true })
     }
 
     if (req.method === 'DELETE') {
-      const success = deleteTrainingData(decodedDatetime)
-      
-      if (success) {
-        return res.status(200).json({ success: true })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
+      const { date, time, exercise } = req.body
+      await deleteTrainingData(date, time, exercise)
+      return res.status(200).json({ success: true })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

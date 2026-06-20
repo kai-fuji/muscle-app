@@ -1,29 +1,19 @@
 // pages/api/body-data/[date].js
 import { updateBodyData, deleteBodyData } from '../../../lib/db'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { date } = req.query
 
   try {
     if (req.method === 'PUT') {
-      const updatedEntry = req.body
-      const success = updateBodyData(date, updatedEntry)
-      
-      if (success) {
-        return res.status(200).json({ success: true, data: updatedEntry })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
+      const { weight, body_fat } = req.body
+      await updateBodyData(date, weight, body_fat)
+      return res.status(200).json({ success: true })
     }
 
     if (req.method === 'DELETE') {
-      const success = deleteBodyData(date)
-      
-      if (success) {
-        return res.status(200).json({ success: true })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
+      await deleteBodyData(date)
+      return res.status(200).json({ success: true })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

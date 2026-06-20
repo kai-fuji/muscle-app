@@ -1,17 +1,17 @@
 // pages/api/exercises/index.js
 import { getAllExercises, addExercise } from '../../../lib/db'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const data = getAllExercises()
-      return res.status(200).json(data)
+      const data = await getAllExercises()
+      return res.status(200).json(data || [])
     }
 
     if (req.method === 'POST') {
-      const newExercise = req.body
-      const result = addExercise(newExercise)
-      return res.status(200).json({ success: true, data: result })
+      const { name, category } = req.body
+      await addExercise(name, category)
+      return res.status(200).json({ success: true })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

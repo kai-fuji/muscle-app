@@ -1,17 +1,17 @@
 // pages/api/nutrition/index.js
 import { getAllNutritionData, addNutritionData } from '../../../lib/db'
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const data = getAllNutritionData()
-      return res.status(200).json(data)
+      const data = await getAllNutritionData()
+      return res.status(200).json(data || [])
     }
 
     if (req.method === 'POST') {
-      const newEntry = req.body
-      const result = addNutritionData(newEntry)
-      return res.status(200).json({ success: true, data: result })
+      const { date, time, meal, calories, protein, fat, carbs, fiber } = req.body
+      await addNutritionData(date, time, meal, calories, protein, fat, carbs, fiber)
+      return res.status(200).json({ success: true })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })
