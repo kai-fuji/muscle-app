@@ -10,7 +10,8 @@ export default async function handler(req, res) {
     const db = await getDb()
     const { body_data, nutrition, training, exercises } = req.body
 
-    // body_data をインポ�EチE    if (body_data && Array.isArray(body_data)) {
+    // body_data をインポート
+    if (body_data && Array.isArray(body_data)) {
       for (const record of body_data) {
         await db.execute({
           sql: 'INSERT OR REPLACE INTO body_data (date, weight, body_fat) VALUES (?, ?, ?)',
@@ -19,7 +20,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // nutrition をインポ�EチE    if (nutrition && Array.isArray(nutrition)) {
+    // nutrition をインポート
+    if (nutrition && Array.isArray(nutrition)) {
       for (const record of nutrition) {
         await db.execute({
           sql: `INSERT OR REPLACE INTO nutrition 
@@ -31,7 +33,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // training をインポ�EチE    if (training && Array.isArray(training)) {
+    // training をインポート
+    if (training && Array.isArray(training)) {
       for (const record of training) {
         await db.execute({
           sql: `INSERT OR REPLACE INTO training 
@@ -43,7 +46,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // exercises をインポ�EチE    if (exercises && Array.isArray(exercises)) {
+    // exercises をインポート
+    if (exercises && Array.isArray(exercises)) {
       for (const record of exercises) {
         await db.execute({
           sql: 'INSERT OR REPLACE INTO exercises (name, category) VALUES (?, ?)',
@@ -52,9 +56,9 @@ export default async function handler(req, res) {
       }
     }
 
-    res.status(200).json({ message: 'インポ�Eトが完亁E��ました' })
+    res.status(200).json({ message: 'インポートが完了しました' })
   } catch (error) {
     console.error('Import error:', error)
-    res.status(500).json({ error: 'インポ�Eトに失敗しました' })
+    res.status(500).json({ error: 'インポートに失敗しました' })
   }
 }

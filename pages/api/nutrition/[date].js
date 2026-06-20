@@ -1,34 +1,1 @@
-// pages/api/nutrition/[date].js
-import { updateNutritionData, deleteNutritionData } from '../../../lib/db'
-
-export default function handler(req, res) {
-  const { date } = req.query
-
-  try {
-    if (req.method === 'PUT') {
-      const updatedEntry = req.body
-      const success = updateNutritionData(date, updatedEntry)
-      
-      if (success) {
-        return res.status(200).json({ success: true, data: updatedEntry })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
-    }
-
-    if (req.method === 'DELETE') {
-      const success = deleteNutritionData(date)
-      
-      if (success) {
-        return res.status(200).json({ success: true })
-      } else {
-        return res.status(404).json({ success: false, error: 'Entry not found' })
-      }
-    }
-
-    return res.status(405).json({ error: 'Method not allowed' })
-  } catch (error) {
-    console.error('Nutrition API error:', error)
-    return res.status(500).json({ success: false, error: error.message })
-  }
-}
+⼯瀠条獥愯楰港瑵楲楴湯椯摮硥樮൳椊灭牯⁴⁻敧䅴汬畎牴瑩潩䑮瑡ⱡ愠摤畎牴瑩潩䑮瑡⁡⁽牦浯✠⸮ⸯ⼮⸮氯扩搯❢਍਍硥潰瑲搠晥畡瑬映湵瑣潩⁮慨摮敬⡲敲ⱱ爠獥 ൻ 琠祲笠਍††晩⠠敲⹱敭桴摯㴠㴽✠䕇❔ ൻ ††挠湯瑳搠瑡⁡‽敧䅴汬畎牴瑩潩䑮瑡⡡ഩ ††爠瑥牵⁮敲⹳瑳瑡獵㈨〰⸩獪湯搨瑡⥡਍††ൽഊ †椠⁦爨煥洮瑥潨⁤㴽‽倧协❔ ൻ ††挠湯瑳渠睥湅牴⁹‽敲⹱潢祤਍†††潣獮⁴敲畳瑬㴠愠摤畎牴瑩潩䑮瑡⡡敮䕷瑮祲ഩ ††爠瑥牵⁮敲⹳瑳瑡獵㈨〰⸩獪湯笨猠捵散獳›牴敵‬慤慴›敲畳瑬素ഩ †素਍਍††敲畴湲爠獥献慴畴⡳〴⤵樮潳⡮⁻牥潲㩲✠敍桴摯渠瑯愠汬睯摥‧⥽਍†⁽慣捴⁨攨牲牯 ൻ †挠湯潳敬攮牲牯✨畎牴瑩潩⁮偁⁉牥潲㩲Ⱗ攠牲牯ഩ †爠瑥牵⁮敲⹳瑳瑡獵㔨〰⸩獪湯笨猠捵散獳›慦獬ⱥ攠牲牯›牥潲⹲敭獳条⁥⥽਍†ൽ紊਍

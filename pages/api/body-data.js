@@ -10,7 +10,7 @@ export default async function handler(req, res) {
       res.status(200).json(result.rows)
     } catch (error) {
       console.error('Error fetching body data:', error)
-      res.status(500).json({ error: 'チE�Eタの取得に失敗しました' })
+      res.status(500).json({ error: 'データの取得に失敗しました' })
     }
   } else if (req.method === 'POST') {
     try {
