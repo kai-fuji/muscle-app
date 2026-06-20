@@ -74,7 +74,7 @@ export default function BodyData() {
   }
 
   const handleDelete = async (date) => {
-    if (!confirm('こ�EチE�Eタを削除しますか�E�E)) return
+    if (!confirm('このデータを削除しますか？')) return
     
     try {
       const res = await fetch(`/api/body-data/${date}`, {
@@ -99,7 +99,8 @@ export default function BodyData() {
     })
   }
 
-  // 統計情報を計箁E  const stats = {
+  // 統計情報を計算
+  const stats = {
     latest: data.length > 0 ? data[data.length - 1] : null,
     average: data.length > 0 
       ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(1)
@@ -135,7 +136,8 @@ export default function BodyData() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
-                    日仁E                  </label>
+                    日付
+                  </label>
                   <input
                     type="date"
                     value={formData.date}
@@ -162,7 +164,7 @@ export default function BodyData() {
                 
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
-                    体脂肪玁E(%)
+                    体脂肪率 (%)
                   </label>
                   <input
                     type="number"
@@ -176,7 +178,7 @@ export default function BodyData() {
                 </div>
                 
                 <button type="submit" className="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200 w-full">
-                  {editingDate ? '更新する' : '保存すめE}
+                  {editingDate ? '更新する' : '保存する'}
                 </button>
               </form>
             </Card>
@@ -184,10 +186,10 @@ export default function BodyData() {
         )}
       </AnimatePresence>
 
-      {/* 現在の状況E*/}
+      {/* 現在の状況 */}
       {stats.latest && (
         <div className="gradient-card mb-6">
-          <h3 className="text-white/80 text-sm font-medium mb-4">現在の状況E/h3>
+          <h3 className="text-white/80 text-sm font-medium mb-4">現在の状況</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="flex items-baseline">
@@ -201,7 +203,7 @@ export default function BodyData() {
                 <span className="text-5xl font-bold">{stats.latest.body_fat_percentage}</span>
                 <span className="text-xl ml-2 text-white/80">%</span>
               </div>
-              <p className="text-white/80 text-sm mt-1">体脂肪玁E/p>
+              <p className="text-white/80 text-sm mt-1">体脂肪率</p>
             </div>
           </div>
           {stats.change !== 0 && (
@@ -214,7 +216,7 @@ export default function BodyData() {
         </div>
       )}
 
-      {/* グラチE*/}
+      {/* グラフ */}
       {data.length > 0 && (
         <Card title="体重推移">
           <Chart
@@ -226,13 +228,13 @@ export default function BodyData() {
         </Card>
       )}
 
-      {/* 体脂肪玁E��ラチE*/}
+      {/* 体脂肪率グラフ */}
       {data.length > 0 && (
-        <Card title="体脂肪玁E��移">
+        <Card title="体脂肪率推移">
           <Chart
             data={data.map(d => d.body_fat_percentage)}
             labels={data.map(d => format(new Date(d.date), 'M/d'))}
-            title="体脂肪玁E
+            title="体脂肪率"
             color="#FFA07A"
           />
         </Card>
@@ -243,7 +245,7 @@ export default function BodyData() {
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
           <div className="text-2xl mb-2"><DashboardIcon size={22} className="text-gray-400" /></div>
           <div className="text-2xl font-bold text-white">{stats.average}</div>
-          <div className="text-sm text-gray-400">平坁E��重</div>
+          <div className="text-sm text-gray-400">平均体重</div>
         </div>
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
           <div className="text-2xl mb-2"><TrendIcon size={22} className="text-gray-400" /></div>
@@ -252,7 +254,7 @@ export default function BodyData() {
         </div>
       </div>
 
-      {/* 履歴リスチE*/}
+      {/* 履歴リスト */}
       {data.length > 0 && (
         <Card title="記録履歴">
           <div className="space-y-3">
@@ -266,7 +268,7 @@ export default function BodyData() {
               >
                 <div>
                   <div className="font-medium text-gray-100">
-                    {format(new Date(entry.date), 'yyyy年M朁E日')}
+                    {format(new Date(entry.date), 'yyyy年M月d日')}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -279,7 +281,8 @@ export default function BodyData() {
                       onClick={() => handleEdit(entry)}
                       className="text-blue-400 hover:text-blue-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-900/20"
                     >
-                      編雁E                    </button>
+                      編集
+                    </button>
                     <button
                       onClick={() => handleDelete(entry.date)}
                       className="text-red-400 hover:text-red-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-red-900/20"
@@ -294,16 +297,17 @@ export default function BodyData() {
         </Card>
       )}
 
-      {/* チE�EタがなぁE��吁E*/}
+      {/* データがない場合 */}
       {data.length === 0 && !showForm && (
         <Card>
           <div className="text-center py-12">
             <div className="text-6xl mb-4"><BodyDataIcon size={64} className="text-gray-400" /></div>
             <h3 className="text-xl font-bold text-gray-100 mb-2">
-              まだチE�Eタがありません
+              まだデータがありません
             </h3>
             <p className="text-gray-400 mb-6">
-              、E 記録する」�EタンでチE�Eタを追加しましょぁE            </p>
+              「+ 記録する」ボタンでデータを追加しましょう
+            </p>
           </div>
         </Card>
       )}

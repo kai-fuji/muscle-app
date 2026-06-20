@@ -1,5 +1,5 @@
 // components/Layout.js - Dark Theme Version
-// 既存�Eレイアウトを維持しながら、色味だけをダークチE�Eマに変更
+// 既存のレイアウトを維持しながら、色味だけをダークテーマに変更
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,46 +21,46 @@ export default function Layout({ children }) {
   const [showMenu, setShowMenu] = useState(false)
 
   const navItems = [
-    { path: '/', icon: <DashboardIcon size={20} />, label: 'ダチE��ュボ�EチE },
+    { path: '/', icon: <DashboardIcon size={20} />, label: 'ダッシュボード' },
     { path: '/body-data', icon: <BodyDataIcon size={20} />, label: '身体データ' },
-    { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栁E��E },
+    { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栄養' },
     { path: '/training', icon: <TrainingIcon size={20} />, label: 'トレーニング' },
-    { path: '/analysis', icon: <TrendIcon size={20} />, label: '刁E��' },
-    { path: '/ai-report', icon: <WorkoutIcon size={20} />, label: 'AI解极E },
+    { path: '/analysis', icon: <TrendIcon size={20} />, label: '分析' },
+    { path: '/ai-report', icon: <WorkoutIcon size={20} />, label: 'AI解析' },
     { path: '/exercise-master', icon: <DumbbellIcon size={20} />, label: '種目マスター' },
-    { path: '/data-management', icon: <CaloriesIcon size={20} />, label: 'チE�Eタ管琁E },
-    { path: '/import', icon: <UploadIcon size={20} />, label: 'インポ�EチE },
+    { path: '/data-management', icon: <CaloriesIcon size={20} />, label: 'データ管理' },
+    { path: '/import', icon: <UploadIcon size={20} />, label: 'インポート' },
   ]
 
   const bottomNavItems = [
-    { path: '/', icon: <DashboardIcon size={20} />, label: 'ダチE��ュボ�EチE },
+    { path: '/', icon: <DashboardIcon size={20} />, label: 'ダッシュボード' },
     { path: '/body-data', icon: <BodyDataIcon size={20} />, label: '身体データ' },
-    { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栁E��E },
+    { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栄養' },
     { path: '/training', icon: <TrainingIcon size={20} />, label: 'トレーニング' },
-    { path: '/analysis', icon: <TrendIcon size={20} />, label: '刁E��' },
-    { path: '/ai-report', icon: <WorkoutIcon size={20} />, label: 'AI解极E },
+    { path: '/analysis', icon: <TrendIcon size={20} />, label: '分析' },
+    { path: '/ai-report', icon: <WorkoutIcon size={20} />, label: 'AI解析' },
     { path: '/exercise-master', icon: <DumbbellIcon size={20} />, label: '種目マスター' },
-    { path: '/data-management', icon: <CaloriesIcon size={20} />, label: 'チE�Eタ管琁E },
-    { path: '/import', icon: <UploadIcon size={20} />, label: 'インポ�EチE },
+    { path: '/data-management', icon: <CaloriesIcon size={20} />, label: 'データ管理' },
+    { path: '/import', icon: <UploadIcon size={20} />, label: 'インポート' },
   ]
 
   return (
-    <div className="min-h-screen bg-bg-primary"> {/* ダークチE�EチE 黒背景 */}
+    <div className="min-h-screen bg-bg-primary"> {/* ダークテーマ: 黒背景 */}
       {/* Header */}
-      <header className="bg-bg-secondary border-b border-border-dark sticky top-0 z-50"> {/* ダークチE�EチE*/}
+      <header className="bg-bg-secondary border-b border-border-dark sticky top-0 z-50"> {/* ダークテーマ */}
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="text-accent-cyan">
               <DumbbellIcon size={32} />
             </div>
-            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-cyan"> {/* ダークチE�EチE シアングラチE�Eション */}
+            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-cyan"> {/* ダークテーマ: シアングラデーション */}
               筋トレ・食事記録アプリ
             </h1>
           </div>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg hover:bg-bg-card-elevated transition-colors text-text-primary"> {/* ダークチE�EチE*/}
-            <div className="text-2xl">{showMenu ? '✁E : '☰'}</div>
+            className="p-2 rounded-lg hover:bg-bg-card-elevated transition-colors text-text-primary"> {/* ダークテーマ */}
+            <div className="text-2xl">{showMenu ? '✕' : '☰'}</div>
           </button>
         </div>
       </header>
@@ -90,7 +90,7 @@ export default function Layout({ children }) {
                   <button
                     onClick={() => setShowMenu(false)}
                     className="p-2 rounded-lg hover:bg-bg-card-elevated text-text-primary">
-                    <div className="text-2xl">✁E/div>
+                    <div className="text-2xl">✕</div>
                   </button>
                 </div>
                 <nav className="space-y-2">
