@@ -1,1 +1,34 @@
-⼯瀠条獥愯楰支數捲獩獥椯摮硥樮൳椊灭牯⁴⁻敧䅴汬硅牥楣敳ⱳ愠摤硅牥楣敳素映潲⁭⸧⼮⸮ⸯ⼮楬⽢扤ധഊ攊灸牯⁴敤慦汵⁴畦据楴湯栠湡汤牥爨煥‬敲⥳笠਍†牴⁹ൻ †椠⁦爨煥洮瑥潨⁤㴽‽䜧呅⤧笠਍†††潣獮⁴慤慴㴠朠瑥汁䕬數捲獩獥⤨਍†††敲畴湲爠獥献慴畴⡳〲⤰樮潳⡮慤慴ഩ †素਍਍††晩⠠敲⹱敭桴摯㴠㴽✠佐呓⤧笠਍†††潣獮⁴敮䕷數捲獩⁥‽敲⹱潢祤਍†††潣獮⁴敲畳瑬㴠愠摤硅牥楣敳渨睥硅牥楣敳ഩ ††爠瑥牵⁮敲⹳瑳瑡獵㈨〰⸩獪湯笨猠捵散獳›牴敵‬慤慴›敲畳瑬素ഩ †素਍਍††敲畴湲爠獥献慴畴⡳〴⤵樮潳⡮⁻牥潲㩲✠敍桴摯渠瑯愠汬睯摥‧⥽਍†⁽慣捴⁨攨牲牯 ൻ †挠湯潳敬攮牲牯✨硅牥楣敳⁳偁⁉牥潲㩲Ⱗ攠牲牯ഩ †椠⁦攨牲牯洮獥慳敧椮据畬敤⡳ꊗ臣뮙賩➲⤩笠਍†††敲畴湲爠獥献慴畴⡳〴⤰樮潳⡮⁻畳捣獥㩳映污敳‬牥潲㩲攠牲牯洮獥慳敧素ഩ †素਍††敲畴湲爠獥献慴畴⡳〵⤰樮潳⡮⁻畳捣獥㩳映污敳‬牥潲㩲攠牲牯洮獥慳敧素ഩ 素਍ൽ
+// pages/api/exercises/[name].js
+import { getDb } from '../../../lib/db'
+
+export default async function handler(req, res) {
+  const db = await getDb()
+  const { name } = req.query
+
+  if (req.method === 'PUT') {
+    try {
+      const { name: newName, category } = req.body
+      await db.execute({
+        sql: 'UPDATE exercises SET name = ?, category = ? WHERE name = ?',
+        args: [newName, category, name]
+      })
+      res.status(200).json({ message: '更新しました' })
+    } catch (error) {
+      console.error('Error updating exercise:', error)
+      res.status(500).json({ error: '更新に失敗しました' })
+    }
+  } else if (req.method === 'DELETE') {
+    try {
+      await db.execute({
+        sql: 'DELETE FROM exercises WHERE name = ?',
+        args: [name]
+      })
+      res.status(200).json({ message: '削除しました' })
+    } catch (error) {
+      console.error('Error deleting exercise:', error)
+      res.status(500).json({ error: '削除に失敗しました' })
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' })
+  }
+}

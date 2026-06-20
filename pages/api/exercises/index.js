@@ -1,1 +1,25 @@
-⼯瀠条獥愯楰支數捲獩獥椯摮硥樮൳椊灭牯⁴⁻敧䅴汬硅牥楣敳ⱳ愠摤硅牥楣敳素映潲⁭⸧⼮⸮ⸯ⼮楬⽢扤ധഊ攊灸牯⁴敤慦汵⁴畦据楴湯栠湡汤牥爨煥‬敲⥳笠਍†牴⁹ൻ †椠⁦爨煥洮瑥潨⁤㴽‽䜧呅⤧笠਍†††潣獮⁴慤慴㴠朠瑥汁䕬數捲獩獥⤨਍†††敲畴湲爠獥献慴畴⡳〲⤰樮潳⡮慤慴ഩ †素਍਍††晩⠠敲⹱敭桴摯㴠㴽✠佐呓⤧笠਍†††潣獮⁴敮䕷數捲獩⁥‽敲⹱潢祤਍†††潣獮⁴敲畳瑬㴠愠摤硅牥楣敳渨睥硅牥楣敳ഩ ††爠瑥牵⁮敲⹳瑳瑡獵㈨〰⸩獪湯笨猠捵散獳›牴敵‬慤慴›敲畳瑬素ഩ †素਍਍††敲畴湲爠獥献慴畴⡳〴⤵樮潳⡮⁻牥潲㩲✠敍桴摯渠瑯愠汬睯摥‧⥽਍†⁽慣捴⁨攨牲牯 ൻ †挠湯潳敬攮牲牯✨硅牥楣敳⁳偁⁉牥潲㩲Ⱗ攠牲牯ഩ †椠⁦攨牲牯洮獥慳敧椮据畬敤⡳ꊗ臣뮙賩➲⤩笠਍†††敲畴湲爠獥献慴畴⡳〴⤰樮潳⡮⁻畳捣獥㩳映污敳‬牥潲㩲攠牲牯洮獥慳敧素ഩ †素਍††敲畴湲爠獥献慴畴⡳〵⤰樮潳⡮⁻畳捣獥㩳映污敳‬牥潲㩲攠牲牯洮獥慳敧素ഩ 素਍ൽ
+// pages/api/exercises/index.js
+import { getAllExercises, addExercise } from '../../../lib/db'
+
+export default function handler(req, res) {
+  try {
+    if (req.method === 'GET') {
+      const data = getAllExercises()
+      return res.status(200).json(data)
+    }
+
+    if (req.method === 'POST') {
+      const newExercise = req.body
+      const result = addExercise(newExercise)
+      return res.status(200).json({ success: true, data: result })
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' })
+  } catch (error) {
+    console.error('Exercises API error:', error)
+    if (error.message.includes('既に登録')) {
+      return res.status(400).json({ success: false, error: error.message })
+    }
+    return res.status(500).json({ success: false, error: error.message })
+  }
+}
