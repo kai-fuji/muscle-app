@@ -9,7 +9,7 @@ import { AIIcon, AlertIcon, BodyDataIcon, CaloriesIcon, CheckIcon, DashboardIcon
 export default function Analysis() {
   const [bodyData, setBodyData] = useState([])
   const [nutritionData, setNutritionData] = useState([])
-  const [period, setPeriod] = useState(7) // 7, 14, 30日
+  const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
 
   useEffect(() => {
     fetchData()
@@ -121,7 +121,12 @@ export default function Analysis() {
 
       {/* 期間選択 */}
       <div className="flex space-x-2 mb-6">
-        {[7, 14, 30].map((days) => (
+        {[
+          { days: 30, label: '1か月' },
+          { days: 90, label: '3か月' },
+          { days: 180, label: '6か月' },
+          { days: 365, label: '1年' }
+        ].map(({ days, label }) => (
           <button
             key={days}
             onClick={() => setPeriod(days)}
@@ -131,7 +136,7 @@ export default function Analysis() {
                 : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
             }`}
           >
-            {days}日間
+            {label}
           </button>
         ))}
       </div>
@@ -215,8 +220,8 @@ export default function Analysis() {
         <>
           <Card title="体重推移">
             <Chart
-              data={recentBodyData.map(d => d.weight)}
-              labels={recentBodyData.map(d => format(new Date(d.date), 'M/d'))}
+              data={[...recentBodyData].reverse().map(d => d.weight)}
+              labels={[...recentBodyData].reverse().map(d => format(new Date(d.date), 'M/d'))}
               title="体重"
               color="#FF6B6B"
             />
@@ -224,8 +229,8 @@ export default function Analysis() {
 
           <Card title="除脂肪体重（筋肉量）">
             <Chart
-              data={leanMassData.map(d => d.leanMass.toFixed(1))}
-              labels={leanMassData.map(d => format(new Date(d.date), 'M/d'))}
+              data={[...leanMassData].reverse().map(d => d.leanMass.toFixed(1))}
+              labels={[...leanMassData].reverse().map(d => format(new Date(d.date), 'M/d'))}
               title="除脂肪体重"
               color="#10B981"
             />
@@ -236,8 +241,8 @@ export default function Analysis() {
 
           <Card title="体脂肪率推移">
             <Chart
-              data={recentBodyData.map(d => d.body_fat_percentage)}
-              labels={recentBodyData.map(d => format(new Date(d.date), 'M/d'))}
+              data={[...recentBodyData].reverse().map(d => d.body_fat_percentage)}
+              labels={[...recentBodyData].reverse().map(d => format(new Date(d.date), 'M/d'))}
               title="体脂肪率"
               color="#FFA07A"
             />

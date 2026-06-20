@@ -11,6 +11,7 @@ export default function Nutrition() {
   const [showForm, setShowForm] = useState(false)
   const [editingDate, setEditingDate] = useState(null)
   const [targetCalories, setTargetCalories] = useState(2000)
+  const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     calories: '',
@@ -68,19 +69,28 @@ export default function Nutrition() {
     }
   }
 
+  // 期間フィルター処理
+  const getFilteredData = (data, days) => {
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    return data.filter(d => new Date(d.date) >= cutoffDate)
+  }
+
+  const filteredData = getFilteredData(data, period)
+
   // 統計情報
   const stats = {
     today: data.find(d => d.date === format(new Date(), 'yyyy-MM-dd')),
-    average: data.length > 0
-      ? Math.round(data.reduce((sum, d) => sum + d.calories, 0) / data.length)
+    average: filteredData.length > 0
+      ? Math.round(filteredData.reduce((sum, d) => sum + d.calories, 0) / filteredData.length)
       : 0,
-    avgProtein: data.length > 0
-      ? Math.round(data.reduce((sum, d) => sum + (d.protein || 0), 0) / data.length)
+    avgProtein: filteredData.length > 0
+      ? Math.round(filteredData.reduce((sum, d) => sum + (d.protein || 0), 0) / filteredData.length)
       : 0,
-    avgCarbs: data.length > 0
-      ? Math.round(data.reduce((sum, d) => sum + (d.carbs || 0), 0) / data.length)
+    avgCarbs: filteredData.length > 0
+      ? Math.round(filteredData.reduce((sum, d) => sum + (d.carbs || 0), 0) / filteredData.length)
       : 0,
-    total: data.reduce((sum, d) => sum + d.calories, 0)
+    total: filteredData.reduce((sum, d) => sum + d.calories, 0)
   }
 
   const todayProgress = stats.today 
@@ -98,6 +108,28 @@ export default function Nutrition() {
         >
           {showForm ? 'キャンセル' : '+ 記録する'}
         </button>
+      </div>
+
+      {/* 期間選択 */}
+      <div className="flex space-x-2 mb-6">
+        {[
+          { days: 30, label: '1か月' },
+          { days: 90, label: '3か月' },
+          { days: 180, label: '6か月' },
+          { days: 365, label: '1年' }
+        ].map(({ days, label }) => (
+          <button
+            key={days}
+            onClick={() => setPeriod(days)}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              period === days
+                ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* 入力フォーム */}
@@ -254,7 +286,7 @@ export default function Nutrition() {
         </div>
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
           <div className="text-2xl mb-2"><TrendIcon size={22} className="text-gray-400" /></div>
-          <div className="text-2xl font-bold text-white">{data.length}</div>
+          <div className="text-2xl font-bold text-white">{filteredData.length}</div>
           <div className="text-sm text-gray-400">記録日数</div>
         </div>
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
@@ -270,11 +302,11 @@ export default function Nutrition() {
       </div>
 
       {/* カロリー推移グラフ */}
-      {data.length > 0 && (
+      {filteredData.length > 0 && (
         <Card title="摂取カロリー推移">
           <Chart
-            data={data.map(d => d.calories)}
-            labels={data.map(d => format(new Date(d.date), 'M/d'))}
+            data={[...filteredData].reverse().map(d => d.calories)}
+            labels={[...filteredData].reverse().map(d => format(new Date(d.date), 'M/d'))}
             title="カロリー"
             color="#FFA07A"
           />
@@ -306,7 +338,7 @@ export default function Nutrition() {
       {data.length > 0 && (
         <Card title="記録履歴">
           <div className="space-y-3">
-            {data.slice().reverse().slice(0, 10).map((entry, index) => {
+            {data.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10).map((entry, index) => {
               const percentage = (entry.calories / targetCalories) * 100
               const isOnTarget = percentage >= 95 && percentage <= 105
               

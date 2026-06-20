@@ -10,6 +10,7 @@ export default function BodyData() {
   const [data, setData] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDate, setEditingDate] = useState(null)
+  const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
@@ -95,15 +96,78 @@ export default function BodyData() {
     })
   }
 
+  // 期間フィルター処理
+  const getFilteredData = (data, days) => {
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    return data.filter(d => new Date(d.date) >= cutoffDate)
+  }
+
+  const filteredData = getFilteredData(data, period)
+
+  // 7日間の移動平均を計算
+  const calculateMovingAverage = (data, windowSize = 7) => {
+    const result = []
+    for (let i = 0; i < data.length; i++) {
+      if (i < windowSize - 1) {
+        result.push(null) // データが不足している場合はnull
+      } else {
+        const sum = data.slice(i - windowSize + 1, i + 1).reduce((acc, val) => acc + val, 0)
+        result.push(parseFloat((sum / windowSize).toFixed(2)))
+      }
+    }
+    return result
+  }
+
   // 統計情報を計算
   const stats = {
     latest: data.length > 0 ? data[data.length - 1] : null,
-    average: data.length > 0 
-      ? (data.reduce((sum, d) => sum + d.weight, 0) / data.length).toFixed(1)
+    average: filteredData.length > 0 
+      ? (filteredData.reduce((sum, d) => sum + d.weight, 0) / filteredData.length).toFixed(1)
       : 0,
     change: data.length > 1
       ? (data[data.length - 1].weight - data[data.length - 2].weight).toFixed(1)
       : 0
+  }
+
+  // グラフ用のデータセットを準備
+  const prepareWeightChartData = () => {
+    const reversedData = [...filteredData].reverse()
+    const weights = reversedData.map(d => d.weight)
+    const labels = reversedData.map(d => format(new Date(d.date), 'M/d'))
+    const movingAvg = calculateMovingAverage(weights)
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '体重',
+          data: weights,
+          borderColor: '#FF6B6B',
+          backgroundColor: '#FF6B6B30',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#FF6B6B',
+          pointBorderColor: '#000',
+          pointBorderWidth: 2,
+        },
+        {
+          label: '移動平均(7日)',
+          data: movingAvg,
+          borderColor: '#FFD93D',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderDash: [5, 5],
+        },
+      ]
+    }
   }
 
   return (
@@ -117,6 +181,28 @@ export default function BodyData() {
         >
           {showForm ? 'キャンセル' : '+ 記録する'}
         </button>
+      </div>
+
+      {/* 期間選択 */}
+      <div className="flex space-x-2 mb-6">
+        {[
+          { days: 30, label: '1か月' },
+          { days: 90, label: '3か月' },
+          { days: 180, label: '6か月' },
+          { days: 365, label: '1年' }
+        ].map(({ days, label }) => (
+          <button
+            key={days}
+            onClick={() => setPeriod(days)}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              period === days
+                ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* 入力フォーム */}
@@ -213,23 +299,21 @@ export default function BodyData() {
       )}
 
       {/* グラフ */}
-      {data.length > 0 && (
+      {filteredData.length > 0 && (
         <Card title="体重推移">
           <Chart
-            data={data.map(d => d.weight)}
-            labels={data.map(d => format(new Date(d.date), 'M/d'))}
-            title="体重"
-            color="#FF6B6B"
+            datasets={prepareWeightChartData().datasets}
+            labels={prepareWeightChartData().labels}
           />
         </Card>
       )}
 
       {/* 体脂肪率グラフ */}
-      {data.length > 0 && (
+      {filteredData.length > 0 && (
         <Card title="体脂肪率推移">
           <Chart
-            data={data.map(d => d.body_fat_percentage)}
-            labels={data.map(d => format(new Date(d.date), 'M/d'))}
+            data={[...filteredData].reverse().map(d => d.body_fat_percentage)}
+            labels={[...filteredData].reverse().map(d => format(new Date(d.date), 'M/d'))}
             title="体脂肪率"
             color="#FFA07A"
           />
@@ -245,7 +329,7 @@ export default function BodyData() {
         </div>
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
           <div className="text-2xl mb-2"><TrendIcon size={22} className="text-gray-400" /></div>
-          <div className="text-2xl font-bold text-white">{data.length}</div>
+          <div className="text-2xl font-bold text-white">{filteredData.length}</div>
           <div className="text-sm text-gray-400">記録日数</div>
         </div>
       </div>
@@ -254,7 +338,7 @@ export default function BodyData() {
       {data.length > 0 && (
         <Card title="記録履歴">
           <div className="space-y-3">
-            {data.slice().reverse().slice(0, 10).map((entry, index) => (
+            {data.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10).map((entry, index) => (
               <motion.div
                 key={entry.date}
                 initial={{ opacity: 0, x: -20 }}
