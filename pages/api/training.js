@@ -7,7 +7,35 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const result = await db.execute('SELECT * FROM training ORDER BY date DESC, time DESC')
-      res.status(200).json(result.rows || [])
+      const rows = result.rows || []
+      
+      // 同じ date/datetime/exercise でグループ化
+      const grouped = {}
+      rows.forEach(row => {
+        // time から datetime を抽出（例: "21:41:01.0" → "21:41:01"）
+        const baseTime = row.time.split('.')[0]
+        const key = `${row.date}_${baseTime}_${row.exercise}`
+        
+        if (!grouped[key]) {
+          grouped[key] = {
+            date: row.date,
+            datetime: `${row.date}T${baseTime}`,
+            exercise: row.exercise,
+            sets: []
+          }
+        }
+        
+        grouped[key].sets.push({
+          weight: row.weight,
+          reps: row.reps,
+          negative: 3  // デフォルト値
+        })
+      })
+      
+      // 配列に変換
+      const groupedArray = Object.values(grouped)
+      
+      res.status(200).json(groupedArray)
     } catch (error) {
       console.error('Error fetching training:', error)
       res.status(500).json({ error: 'データの取得に失敗しました' })
