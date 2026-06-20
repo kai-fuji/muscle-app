@@ -9,6 +9,11 @@ export default async function handler(req, res) {
       const result = await db.execute('SELECT * FROM training ORDER BY date DESC, time DESC')
       const rows = result.rows || []
       
+      console.log('Training GET - Total rows:', rows.length)
+      if (rows.length > 0) {
+        console.log('Training GET - Sample row:', rows[0])
+      }
+      
       // 同じ date/datetime/exercise でグループ化
       const grouped = {}
       rows.forEach(row => {
@@ -35,6 +40,11 @@ export default async function handler(req, res) {
       
       // 配列に変換
       const groupedArray = Object.values(grouped)
+      
+      console.log('Training GET - Grouped entries:', groupedArray.length)
+      if (groupedArray.length > 0) {
+        console.log('Training GET - Sample grouped entry:', JSON.stringify(groupedArray[0]))
+      }
       
       res.status(200).json(groupedArray)
     } catch (error) {
