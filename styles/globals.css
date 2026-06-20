@@ -1,0 +1,582 @@
+/* ========== ダークテーマ - フィットネストラッキングアプリ ========== */
+/* 添付画像のデザインを完全再現 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========== カラーパレット（画像から抽出） ========== */
+:root {
+  /* 背景色 */
+  --bg-primary: #000000;           /* 純黒背景 */
+  --bg-secondary: #1C1C1E;         /* ダークグレー背景 */
+  --bg-card: #2C2C2E;              /* カード背景 */
+  --bg-card-elevated: #3A3A3C;     /* 浮き上がったカード */
+  
+  /* テキストカラー */
+  --text-primary: #FFFFFF;         /* メインテキスト（白） */
+  --text-secondary: #8E8E93;       /* セカンダリテキスト（グレー） */
+  --text-tertiary: #636366;        /* 薄いグレー */
+  
+  /* アクセントカラー - シアン/ターコイズ（Steps用） */
+  --accent-cyan: #00D9FF;
+  --accent-cyan-light: #4DD0E1;
+  --accent-cyan-glow: rgba(0, 217, 255, 0.3);
+  
+  /* アクセントカラー - オレンジ/ゴールド（Distance用） */
+  --accent-orange: #FF9500;
+  --accent-orange-light: #FFB74D;
+  --accent-orange-glow: rgba(255, 149, 0, 0.3);
+  
+  /* アクセントカラー - パープル/ブルー（Weight用） */
+  --accent-purple: #5E5CE6;
+  --accent-purple-light: #7C4DFF;
+  --accent-purple-glow: rgba(94, 92, 230, 0.3);
+  
+  /* アクセントカラー - ピンク（Heart Rate用） */
+  --accent-pink: #FF375F;
+  --accent-pink-glow: rgba(255, 55, 95, 0.3);
+  
+  /* アクセントカラー - グリーン（その他） */
+  --accent-green: #32D74B;
+  --accent-green-glow: rgba(50, 215, 75, 0.3);
+  
+  /* アクセントカラー - レッド（Calories用） */
+  --accent-red: #FF453A;
+  --accent-red-glow: rgba(255, 69, 58, 0.3);
+  
+  /* ボーダー */
+  --border-color: #38383A;
+  --border-light: #48484A;
+  
+  /* シャドウ */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-cyan: 0 4px 20px var(--accent-cyan-glow);
+  --shadow-glow-orange: 0 4px 20px var(--accent-orange-glow);
+  --shadow-glow-purple: 0 4px 20px var(--accent-purple-glow);
+}
+
+/* ========== ベーススタイル ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 
+    'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ========== ダークカードスタイル ========== */
+.dark-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+}
+
+.dark-card:hover {
+  background: var(--bg-card-elevated);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.dark-card-elevated {
+  background: var(--bg-card-elevated);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-light);
+}
+
+/* ========== 円形プログレスリング（画像と同じスタイル） ========== */
+.progress-ring-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px auto;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.5s ease;
+  stroke-linecap: round;
+}
+
+/* 円の中央の数値表示 */
+.progress-ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.progress-ring-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.progress-ring-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* ========== ヘッダー（TODAY + 日付） ========== */
+.header-section {
+  text-align: center;
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-title {
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.header-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ========== 統計グリッド ========== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.stat-card-dark {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.stat-card-dark:hover {
+  background: var(--bg-card-elevated);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.stat-value-large {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label-dark {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* ========== メトリクスセクション（Steps, Distance, Weight） ========== */
+.metric-section {
+  padding: 32px 20px;
+  border-bottom: 3px solid;
+}
+
+.metric-section.steps {
+  border-bottom-color: var(--accent-cyan);
+}
+
+.metric-section.distance {
+  border-bottom-color: var(--accent-orange);
+}
+
+.metric-section.weight {
+  border-bottom-color: var(--accent-purple);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-icon-large {
+  font-size: 40px;
+}
+
+.metric-title {
+  font-size: 16px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+/* ========== タブナビゲーション ========== */
+.tab-navigation {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-navigation::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding-bottom: 8px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab-item.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.tab-item:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* ========== ボトムナビゲーション ========== */
+.bottom-nav-dark {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  padding: 12px 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.nav-items {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.nav-item-dark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px 16px;
+}
+
+.nav-item-dark.active {
+  color: var(--accent-cyan);
+}
+
+.nav-item-dark:not(.active) {
+  color: var(--text-secondary);
+}
+
+.nav-item-dark:active {
+  transform: scale(0.95);
+}
+
+.nav-icon {
+  font-size: 24px;
+}
+
+.nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ========== ボタンスタイル ========== */
+.btn-dark {
+  padding: 14px 28px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 17px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+.btn-cyan {
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-glow-cyan);
+}
+
+.btn-cyan:hover {
+  background: var(--accent-cyan-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px var(--accent-cyan-glow);
+}
+
+.btn-cyan:active {
+  transform: scale(0.98);
+}
+
+.btn-orange {
+  background: var(--accent-orange);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+.btn-purple {
+  background: var(--accent-purple);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.btn-outline-dark {
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--border-light);
+}
+
+.btn-outline-dark:hover {
+  background: var(--bg-card);
+  border-color: var(--text-secondary);
+}
+
+/* ========== インプットスタイル ========== */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 17px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  background: var(--bg-card-elevated);
+  box-shadow: 0 0 0 4px var(--accent-cyan-glow);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ========== グラデーションアクセント ========== */
+.gradient-cyan {
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-light) 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-light) 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-purple-light) 100%);
+}
+
+/* ========== 数値カウンター（大きな数値表示） ========== */
+.counter-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+
+.counter-value {
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.counter-unit {
+  font-size: 24px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.counter-secondary {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* ========== アニメーション ========== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: var(--shadow-glow-cyan);
+  }
+  50% {
+    box-shadow: 0 4px 32px var(--accent-cyan-glow);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s ease;
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* ========== セパレーター ========== */
+.separator-dark {
+  height: 1px;
+  background: var(--border-color);
+  margin: 24px 0;
+}
+
+.separator-thick {
+  height: 3px;
+  margin: 0;
+}
+
+.separator-cyan {
+  background: var(--accent-cyan);
+}
+
+.separator-orange {
+  background: var(--accent-orange);
+}
+
+.separator-purple {
+  background: var(--accent-purple);
+}
+
+/* ========== スクロールバー ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ========== レスポンシブ ========== */
+@media (max-width: 768px) {
+  .dark-card,
+  .dark-card-elevated {
+    padding: 20px;
+  }
+  
+  .counter-value {
+    font-size: 52px;
+  }
+  
+  .stats-grid {
+    gap: 10px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .counter-value {
+    font-size: 48px;
+  }
+  
+  .stat-value-large {
+    font-size: 28px;
+  }
+}
+
+/* ========== ユーティリティクラス ========== */
+.text-cyan { color: var(--accent-cyan); }
+.text-orange { color: var(--accent-orange); }
+.text-purple { color: var(--accent-purple); }
+.text-pink { color: var(--accent-pink); }
+.text-green { color: var(--accent-green); }
+.text-red { color: var(--accent-red); }
+
+.bg-cyan { background-color: var(--accent-cyan); }
+.bg-orange { background-color: var(--accent-orange); }
+.bg-purple { background-color: var(--accent-purple); }
+.bg-pink { background-color: var(--accent-pink); }
+.bg-green { background-color: var(--accent-green); }
+.bg-red { background-color: var(--accent-red); }
+
+.border-cyan { border-color: var(--accent-cyan); }
+.border-orange { border-color: var(--accent-orange); }
+.border-purple { border-color: var(--accent-purple); }
