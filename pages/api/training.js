@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const result = await db.execute('SELECT * FROM training ORDER BY date DESC, time DESC')
-      res.status(200).json(result.rows)
+      res.status(200).json(result.rows || [])
     } catch (error) {
       console.error('Error fetching training:', error)
       res.status(500).json({ error: 'データの取得に失敗しました' })
@@ -15,27 +15,39 @@ export default async function handler(req, res) {
   } else if (req.method === 'POST') {
     try {
       const { date, datetime, exercise, sets } = req.body
+      
+      // 値の検証
+      if (!date || !exercise) {
+        return res.status(400).json({ error: '必須フィールドが不足しています' })
+      }
+      
       // datetime から time を抽出 (HH:MM:SS)
       const time = datetime ? new Date(datetime).toTimeString().slice(0, 8) : new Date().toTimeString().slice(0, 8)
       
       // sets 配列の各要素を個別に保存
-      if (Array.isArray(sets)) {
+      if (Array.isArray(sets) && sets.length > 0) {
         for (let i = 0; i < sets.length; i++) {
           const set = sets[i]
+          
+          // 値の検証
+          const reps = parseInt(set.reps)
+          const weight = parseFloat(set.weight)
+          
+          if (isNaN(reps) || isNaN(weight)) {
+            console.warn(`Skipping invalid set at index ${i}:`, set)
+            continue
+          }
+          
           await db.execute({
             sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
                   VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [date, `${time}.${i}`, exercise, i + 1, set.reps, set.weight]
+            args: [date, `${time}.${i}`, exercise, i + 1, reps, weight]
           })
         }
       } else {
-        // 従来の単一セット形式にも対応
-        await db.execute({
-          sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-          args: [date, time, exercise, sets, reps, weight]
-        })
+        return res.status(400).json({ error: 'sets 配列が不正です' })
       }
+      
       res.status(200).json({ message: '保存しました' })
     } catch (error) {
       console.error('Error saving training:', error)

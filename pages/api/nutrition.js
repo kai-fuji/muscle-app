@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const result = await db.execute('SELECT * FROM nutrition ORDER BY date DESC, time DESC')
-      res.status(200).json(result.rows)
+      res.status(200).json(result.rows || [])
     } catch (error) {
       console.error('Error fetching nutrition:', error)
       res.status(500).json({ error: 'データの取得に失敗しました' })
@@ -15,15 +15,27 @@ export default async function handler(req, res) {
   } else if (req.method === 'POST') {
     try {
       const { date, calories, protein, fat, carbs, sugar } = req.body
+      
+      // 値の検証
+      if (!date || calories === undefined || calories === null) {
+        return res.status(400).json({ error: '必須フィールドが不足しています' })
+      }
+      
       // time と meal を自動生成
-      const time = new Date().toTimeString().slice(0, 8) // HH:MM:SS
+      const time = new Date().toTimeString().slice(0, 8)
       const meal = '食事'
-      const fiber = sugar || 0 // sugar を fiber として保存（暫定）
+      
+      // 数値に変換
+      const caloriesNum = parseInt(calories) || 0
+      const proteinNum = parseFloat(protein) || 0
+      const fatNum = parseFloat(fat) || 0
+      const carbsNum = parseFloat(carbs) || 0
+      const fiberNum = parseFloat(sugar) || 0  // sugar を fiber として保存
       
       await db.execute({
         sql: `INSERT INTO nutrition (date, time, meal, calories, protein, fat, carbs, fiber)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [date, time, meal, calories, protein, fat, carbs, fiber]
+        args: [date, time, meal, caloriesNum, proteinNum, fatNum, carbsNum, fiberNum]
       })
       res.status(200).json({ message: '保存しました' })
     } catch (error) {

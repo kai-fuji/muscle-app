@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const result = await db.execute('SELECT * FROM body_data ORDER BY date DESC')
-      res.status(200).json(result.rows)
+      res.status(200).json(result.rows || [])
     } catch (error) {
       console.error('Error fetching body data:', error)
       res.status(500).json({ error: 'データの取得に失敗しました' })
@@ -15,9 +15,26 @@ export default async function handler(req, res) {
   } else if (req.method === 'POST') {
     try {
       const { date, weight, body_fat_percentage } = req.body
+      
+      // 値の検証
+      if (!date || weight === undefined || weight === null) {
+        return res.status(400).json({ error: '必須フィールドが不足しています' })
+      }
+      
+      // 数値に変換（文字列の場合に備えて）
+      const weightNum = parseFloat(weight)
+      const bodyFatNum = body_fat_percentage !== undefined && body_fat_percentage !== null 
+        ? parseFloat(body_fat_percentage) 
+        : null
+      
+      // NaN チェック
+      if (isNaN(weightNum)) {
+        return res.status(400).json({ error: '体重の値が不正です' })
+      }
+      
       await db.execute({
         sql: 'INSERT OR REPLACE INTO body_data (date, weight, body_fat) VALUES (?, ?, ?)',
-        args: [date, weight, body_fat_percentage]
+        args: [date, weightNum, bodyFatNum]
       })
       res.status(200).json({ message: '保存しました' })
     } catch (error) {
