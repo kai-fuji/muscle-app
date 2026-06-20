@@ -14,12 +14,28 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { date, time, exercise, sets, reps, weight } = req.body
-      await db.execute({
-        sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [date, time, exercise, sets, reps, weight]
-      })
+      const { date, datetime, exercise, sets } = req.body
+      // datetime から time を抽出 (HH:MM:SS)
+      const time = datetime ? new Date(datetime).toTimeString().slice(0, 8) : new Date().toTimeString().slice(0, 8)
+      
+      // sets 配列の各要素を個別に保存
+      if (Array.isArray(sets)) {
+        for (let i = 0; i < sets.length; i++) {
+          const set = sets[i]
+          await db.execute({
+            sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [date, `${time}.${i}`, exercise, i + 1, set.reps, set.weight]
+          })
+        }
+      } else {
+        // 従来の単一セット形式にも対応
+        await db.execute({
+          sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          args: [date, time, exercise, sets, reps, weight]
+        })
+      }
       res.status(200).json({ message: '保存しました' })
     } catch (error) {
       console.error('Error saving training:', error)
