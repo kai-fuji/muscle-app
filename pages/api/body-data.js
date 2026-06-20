@@ -16,21 +16,33 @@ export default async function handler(req, res) {
     try {
       const { date, weight, body_fat_percentage } = req.body
       
+      console.log('Received body-data POST:', { date, weight, body_fat_percentage })
+      
       // 値の検証
-      if (!date || weight === undefined || weight === null) {
+      if (!date || weight === undefined || weight === null || weight === '') {
         return res.status(400).json({ error: '必須フィールドが不足しています' })
       }
       
-      // 数値に変換（文字列の場合に備えて）
+      // 数値に変換（空文字列は null として扱う）
       const weightNum = parseFloat(weight)
-      const bodyFatNum = body_fat_percentage !== undefined && body_fat_percentage !== null 
+      const bodyFatNum = (body_fat_percentage !== undefined && 
+                          body_fat_percentage !== null && 
+                          body_fat_percentage !== '') 
         ? parseFloat(body_fat_percentage) 
         : null
       
       // NaN チェック
       if (isNaN(weightNum)) {
+        console.error('Invalid weight value:', weight)
         return res.status(400).json({ error: '体重の値が不正です' })
       }
+      
+      if (bodyFatNum !== null && isNaN(bodyFatNum)) {
+        console.error('Invalid body_fat_percentage value:', body_fat_percentage)
+        return res.status(400).json({ error: '体脂肪率の値が不正です' })
+      }
+      
+      console.log('Saving to database:', { date, weightNum, bodyFatNum })
       
       await db.execute({
         sql: 'INSERT OR REPLACE INTO body_data (date, weight, body_fat) VALUES (?, ?, ?)',

@@ -16,8 +16,10 @@ export default async function handler(req, res) {
     try {
       const { date, calories, protein, fat, carbs, sugar } = req.body
       
+      console.log('Received nutrition POST:', { date, calories, protein, fat, carbs, sugar })
+      
       // 値の検証
-      if (!date || calories === undefined || calories === null) {
+      if (!date || calories === undefined || calories === null || calories === '') {
         return res.status(400).json({ error: '必須フィールドが不足しています' })
       }
       
@@ -25,12 +27,14 @@ export default async function handler(req, res) {
       const time = new Date().toTimeString().slice(0, 8)
       const meal = '食事'
       
-      // 数値に変換
+      // 数値に変換（空文字列は 0 として扱う）
       const caloriesNum = parseInt(calories) || 0
-      const proteinNum = parseFloat(protein) || 0
-      const fatNum = parseFloat(fat) || 0
-      const carbsNum = parseFloat(carbs) || 0
-      const fiberNum = parseFloat(sugar) || 0  // sugar を fiber として保存
+      const proteinNum = (protein !== undefined && protein !== null && protein !== '') ? parseFloat(protein) : 0
+      const fatNum = (fat !== undefined && fat !== null && fat !== '') ? parseFloat(fat) : 0
+      const carbsNum = (carbs !== undefined && carbs !== null && carbs !== '') ? parseFloat(carbs) : 0
+      const fiberNum = (sugar !== undefined && sugar !== null && sugar !== '') ? parseFloat(sugar) : 0
+      
+      console.log('Saving to database:', { date, time, meal, caloriesNum, proteinNum, fatNum, carbsNum, fiberNum })
       
       await db.execute({
         sql: `INSERT INTO nutrition (date, time, meal, calories, protein, fat, carbs, fiber)

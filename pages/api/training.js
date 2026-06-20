@@ -16,6 +16,8 @@ export default async function handler(req, res) {
     try {
       const { date, datetime, exercise, sets } = req.body
       
+      console.log('Received training POST:', { date, datetime, exercise, sets })
+      
       // 値の検証
       if (!date || !exercise) {
         return res.status(400).json({ error: '必須フィールドが不足しています' })
@@ -29,14 +31,21 @@ export default async function handler(req, res) {
         for (let i = 0; i < sets.length; i++) {
           const set = sets[i]
           
-          // 値の検証
-          const reps = parseInt(set.reps)
-          const weight = parseFloat(set.weight)
+          console.log(`Processing set ${i}:`, set)
+          
+          // 値の検証（空文字列も処理）
+          const repsStr = set.reps !== undefined && set.reps !== null && set.reps !== '' ? set.reps.toString() : '0'
+          const weightStr = set.weight !== undefined && set.weight !== null && set.weight !== '' ? set.weight.toString() : '0'
+          
+          const reps = parseInt(repsStr)
+          const weight = parseFloat(weightStr)
           
           if (isNaN(reps) || isNaN(weight)) {
-            console.warn(`Skipping invalid set at index ${i}:`, set)
+            console.warn(`Skipping invalid set at index ${i}:`, set, { reps, weight })
             continue
           }
+          
+          console.log(`Saving set ${i + 1}:`, { date, time: `${time}.${i}`, exercise, setNum: i + 1, reps, weight })
           
           await db.execute({
             sql: `INSERT INTO training (date, time, exercise, sets, reps, weight)
@@ -45,6 +54,7 @@ export default async function handler(req, res) {
           })
         }
       } else {
+        console.error('Invalid sets array:', sets)
         return res.status(400).json({ error: 'sets 配列が不正です' })
       }
       
