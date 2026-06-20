@@ -21,7 +21,8 @@ export default async function handler(req, res) {
             date: row.date,
             datetime: `${row.date}T${baseTime}`,
             exercise: row.exercise,
-            sets: []
+            sets: [],
+            interval_seconds: 60  // デフォルト値
           }
         }
         
