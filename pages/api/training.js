@@ -13,10 +13,49 @@ export default async function handler(req, res) {
     try {
       console.log('🔥 before query')
 
-      const result = await db.execute(`
-        SELECT *
-        FROM training
-      `)
+      const url = new URL(req.url, 'http://localhost')
+      const year = url.searchParams.get('year')
+      const month = url.searchParams.get('month')
+
+      let query
+      let args = []
+
+      if (year && month) {
+        // 特定月のデータを取得
+        const paddedMonth = month.padStart(2, '0')
+        const startDate = `${year}-${paddedMonth}-01`
+        
+        // 次月の計算
+        let nextYear = parseInt(year)
+        let nextMonth = parseInt(month) + 1
+        if (nextMonth > 12) {
+          nextMonth = 1
+          nextYear += 1
+        }
+        const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`
+        
+        console.log(`🔥 Fetching data for ${year}年${month}月 (${startDate} to ${endDate})`)
+        
+        query = `
+          SELECT *
+          FROM training
+          WHERE date >= ? AND date < ?
+        `
+        args = [startDate, endDate]
+      } else {
+        // デフォルト：過去90日
+        console.log('🔥 Fetching default data (last 90 days)')
+        
+        query = `
+          SELECT *
+          FROM training
+          WHERE date >= date('now', '-90 days')
+        `
+      }
+
+      const result = args.length > 0
+        ? await db.execute({ sql: query, args })
+        : await db.execute(query)
 
       console.log('🔥 after query')
 

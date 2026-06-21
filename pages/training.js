@@ -43,10 +43,11 @@ export default function Training() {
   
   const audioRef = useRef(null)
 
+  // カレンダー月が変わったときにデータを再取得
   useEffect(() => {
     fetchData()
     fetchExercises()
-  }, [])
+  }, [currentMonth])
 
   // インターバルタイマーのカウントダウン
   useEffect(() => {
@@ -144,7 +145,15 @@ export default function Training() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/training')
+      // カレンダービューの場合は、currentMonthの年月をパラメータとして送信
+      let url = '/api/training'
+      if (view === 'calendar') {
+        const year = format(currentMonth, 'yyyy')
+        const month = format(currentMonth, 'M')
+        url = `/api/training?year=${year}&month=${month}`
+      }
+      
+      const res = await fetch(url)
       const json = await res.json()
       
       console.log('🏋️ Training page - Fetched data:', json)
