@@ -4,7 +4,7 @@ import Card from '../components/Card'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon, CalendarIcon, BarChartIcon, ListIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons'
+import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon, CalendarIcon, BarChartIcon, ListIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from '../components/Icons'
 
 export default function Training() {
   const [data, setData] = useState([])
@@ -18,6 +18,7 @@ export default function Training() {
     sets: [{ weight: '', reps: '', negative: 3 }],
     interval_seconds: 60
   })
+  const [previousHistory, setPreviousHistory] = useState(null)
 
   // カレンダー・グラフ関連のstate
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -184,10 +185,7 @@ export default function Training() {
     e.preventDefault()
     
     try {
-      const url = editingDatetime 
-        ? `/api/training/${encodeURIComponent(editingDatetime)}`
-        : '/api/training'
-      
+      const url = '/api/training' 
       const res = await fetch(url, {
         method: editingDatetime ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -200,7 +198,8 @@ export default function Training() {
             reps: parseInt(s.reps),
             negative: parseInt(s.negative) || 3
           })),
-          interval_seconds: parseInt(formData.interval_seconds)
+          interval_seconds: parseInt(formData.interval_seconds),
+          old_datetime: editingDatetime // 編集時の元のdatetimeを送信
         })
       })
       
@@ -208,6 +207,7 @@ export default function Training() {
         fetchData()
         setShowForm(false)
         setEditingDatetime(null)
+        setPreviousHistory(null)
         setFormData({
           date: format(new Date(), 'yyyy-MM-dd'),
           datetime: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
@@ -215,9 +215,13 @@ export default function Training() {
           sets: [{ weight: '', reps: '', negative: 3 }],
           interval_seconds: 60
         })
+      } else {
+        const errorText = await res.text()
+        alert('保存に失敗しました: ' + errorText)
       }
     } catch (error) {
       console.error('Error saving data:', error)
+      alert('保存中にエラーが発生しました')
     }
   }
 
@@ -561,7 +565,19 @@ export default function Training() {
                   </label>
                   <select
                     value={formData.exercise}
-                    onChange={(e) => setFormData({ ...formData, exercise: e.target.value })}
+                    onChange={(e) => {
+                      const exerciseName = e.target.value
+                      setFormData({ ...formData, exercise: exerciseName })
+                      // 選択した種目の前回履歴を取得
+                      if (exerciseName) {
+                        const history = data
+                          .filter(item => item.exercise === exerciseName)
+                          .sort((a, b) => new Date(b.datetime || b.date) - new Date(a.datetime || a.date))
+                        setPreviousHistory(history.length > 0 ? history[0] : null)
+                      } else {
+                        setPreviousHistory(null)
+                      }
+                    }}
                     required
                     className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
                   >
@@ -574,6 +590,50 @@ export default function Training() {
                     })}
                   </select>
                 </div>
+
+                {/* 前回履歴表示 */}
+                {previousHistory && (
+                  <div className="bg-blue-900/20 border border-blue-700 rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-bold text-blue-300 inline-flex items-center">
+                        <ClipboardIcon size={18} className="mr-2 text-blue-400" />
+                        前回の記録
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            sets: previousHistory.sets.map(s => ({
+                              weight: s.weight.toString(),
+                              reps: s.reps.toString(),
+                              negative: (s.negative || 3).toString()
+                            })),
+                            interval_seconds: previousHistory.interval_seconds
+                          })
+                        }}
+                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                      >
+                        コピー
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div className="mb-1">
+                        日時: {format(new Date(previousHistory.datetime || previousHistory.date), 'yyyy/MM/dd HH:mm')}
+                      </div>
+                      <div>
+                        {previousHistory.sets.map((s, i) => (
+                          <div key={i} className="inline-block mr-3">
+                            セット{i+1}: {s.weight}kg × {s.reps}回 (ネガ{s.negative || 3}秒)
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-1">
+                        インターバル: {previousHistory.interval_seconds === 0 ? 'なし' : `${previousHistory.interval_seconds}秒`}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* セット入力 */}
                 <div>
@@ -631,15 +691,21 @@ export default function Training() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    インターバル（秒）
+                    インターバル
                   </label>
-                  <input
-                    type="number"
+                  <select
                     value={formData.interval_seconds}
                     onChange={(e) => setFormData({ ...formData, interval_seconds: e.target.value })}
-                    placeholder="60"
-                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
-                  />
+                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
+                  >
+                    <option value="0">なし</option>
+                    <option value="30">30秒</option>
+                    <option value="45">45秒</option>
+                    <option value="60">60秒</option>
+                    <option value="90">90秒</option>
+                    <option value="120">120秒</option>
+                    <option value="180">180秒</option>
+                  </select>
                 </div>
                 
                 <button 
