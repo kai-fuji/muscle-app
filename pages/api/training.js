@@ -12,10 +12,12 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       console.log('🔥 before query')
+
       const result = await db.execute(`
         SELECT *
         FROM training
-        LIMIT 50
+        ORDER BY date DESC, time DESC
+        LIMIT 300
       `)
 
       console.log('🔥 after query')
