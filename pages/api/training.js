@@ -3,25 +3,37 @@ import { getDb } from '../../lib/db'
 
 export default async function handler(req, res) {
   const db = await getDb()
-  
+
   console.log('🔥 Training API - Method:', req.method, 'URL:', req.url)
 
+  // =========================
+  // GET
+  // =========================
   if (req.method === 'GET') {
     try {
-      const result = await db.execute('SELECT * FROM training ORDER BY date DESC, time DESC')
+      console.log('🔥 before query')
+
+      const result = await db.execute(`
+        SELECT *
+        FROM training
+        ORDER BY date DESC, time DESC
+        LIMIT 300
+      `)
+
+      console.log('🔥 after query')
+
       const rows = result.rows || []
-      
+
       console.log('Training GET - Total rows:', rows.length)
-      if (rows.length > 0) {
-        console.log('Training GET - Sample row:', rows[0])
-      }
-      
-      // 同じ date/datetime/exercise でグループ化
+
       const grouped = {}
-      rows.forEach(row => {
-        const baseTime = row.time.split('.')[0]
+
+      for (const row of rows) {
+        const safeTime = row.time || '00:00:00'
+        const baseTime = safeTime.split('.')[0]
+
         const key = `${row.date}_${baseTime}_${row.exercise}`
-        
+
         if (!grouped[key]) {
           grouped[key] = {
             date: row.date,
@@ -32,147 +44,221 @@ export default async function handler(req, res) {
             negative: row.negative || 3
           }
         }
-        
+
         grouped[key].sets.push({
-          weight: row.weight,
-          reps: row.reps,
+          weight: row.weight || 0,
+          reps: row.reps || 0,
           negative: row.negative || 3
         })
-      })
-      
-      const groupedArray = Object.values(grouped)
-      
-      console.log('Training GET - Grouped entries:', groupedArray.length)
-      if (groupedArray.length > 0) {
-        console.log('Training GET - Sample grouped entry:', JSON.stringify(groupedArray[0]))
       }
-      
+
+      const groupedArray = Object.values(grouped)
+
+      console.log('Training GET - Grouped entries:', groupedArray.length)
+
       res.status(200).json(groupedArray)
     } catch (error) {
-      console.error('Error fetching training:', error)
-      res.status(500).json({ error: 'データの取得に失敗しました' })
+      console.error('🔥 Error fetching training:', error)
+      res.status(500).json({
+        error: 'データの取得に失敗しました',
+        detail: error.message
+      })
     }
-  } else if (req.method === 'POST') {
+  }
+
+  // =========================
+  // POST
+  // =========================
+  else if (req.method === 'POST') {
     try {
       const { date, datetime, exercise, sets, interval_seconds } = req.body
-      
-      console.log('Received training POST:', { date, datetime, exercise, sets, interval_seconds })
-      
+
       if (!date || !exercise) {
-        return res.status(400).json({ error: '必須フィールドが不足しています' })
+        return res.status(400).json({
+          error: '必須フィールドが不足しています'
+        })
       }
-      
-      const time = datetime ? new Date(datetime).toTimeString().slice(0, 8) : new Date().toTimeString().slice(0, 8)
-      const intervalValue = interval_seconds !== undefined ? parseInt(interval_seconds) : 60
-      
-      if (Array.isArray(sets) && sets.length > 0) {
-        for (let i = 0; i < sets.length; i++) {
-          const set = sets[i]
-          
-          const repsStr = set.reps !== undefined && set.reps !== null && set.reps !== '' ? set.reps.toString() : '0'
-          const weightStr = set.weight !== undefined && set.weight !== null && set.weight !== '' ? set.weight.toString() : '0'
-          
-          const reps = parseInt(repsStr)
-          const weight = parseFloat(weightStr)
-          const negative = parseInt(set.negative) || 3
-          
-          if (isNaN(reps) || isNaN(weight)) {
-            console.warn(`Skipping invalid set at index ${i}:`, set)
-            continue
-          }
-          
-          console.log(`Saving set ${i + 1}:`, { date, time: `${time}.${i}`, exercise, setNum: i + 1, reps, weight, negative, interval_seconds: intervalValue })
-          
-          await db.execute({
-            sql: `INSERT INTO training (date, time, exercise, sets, reps, weight, negative, interval_seconds)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [date, `${time}.${i}`, exercise, i + 1, reps, weight, negative, intervalValue]
-          })
-        }
-      } else {
-        console.error('Invalid sets array:', sets)
-        return res.status(400).json({ error: 'sets 配列が不正です' })
+
+      const time = datetime
+        ? new Date(datetime).toTimeString().slice(0, 8)
+        : new Date().toTimeString().slice(0, 8)
+
+      const intervalValue =
+        interval_seconds !== undefined
+          ? parseInt(interval_seconds)
+          : 60
+
+      if (!Array.isArray(sets) || sets.length === 0) {
+        return res.status(400).json({
+          error: 'sets 配列が不正です'
+        })
       }
-      
-      res.status(200).json({ message: '保存しました' })
+
+      for (let i = 0; i < sets.length; i++) {
+        const set = sets[i]
+
+        const reps = parseInt(set.reps || 0)
+        const weight = parseFloat(set.weight || 0)
+        const negative = parseInt(set.negative) || 3
+
+        if (isNaN(reps) || isNaN(weight)) continue
+
+        await db.execute({
+          sql: `
+            INSERT INTO training
+            (date, time, exercise, sets, reps, weight, negative, interval_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            date,
+            `${time}.${i}`,
+            exercise,
+            i + 1,
+            reps,
+            weight,
+            negative,
+            intervalValue
+          ]
+        })
+      }
+
+      res.status(200).json({
+        message: '保存しました'
+      })
     } catch (error) {
-      console.error('Error saving training:', error)
-      res.status(500).json({ error: '保存に失敗しました' })
+      console.error('🔥 Error saving training:', error)
+
+      res.status(500).json({
+        error: '保存に失敗しました',
+        detail: error.message
+      })
     }
-  } else if (req.method === 'PUT') {
+  }
+
+  // =========================
+  // PUT
+  // =========================
+  else if (req.method === 'PUT') {
     try {
-      const { date, datetime, exercise, sets, old_datetime, interval_seconds } = req.body
-      
-      console.log('🔥 Received training PUT:', { date, datetime, exercise, sets, old_datetime, interval_seconds })
-      
-      // 古いデータを削除
+      const {
+        date,
+        datetime,
+        exercise,
+        sets,
+        old_datetime,
+        interval_seconds
+      } = req.body
+
       if (old_datetime) {
         const oldDate = old_datetime.split('T')[0]
         const oldTime = old_datetime.split('T')[1]
-        
-        console.log('🔥 Deleting old entry:', { oldDate, oldTime, exercise })
-        
+
         await db.execute({
-          sql: 'DELETE FROM training WHERE date = ? AND time LIKE ? AND exercise = ?',
+          sql: `
+            DELETE FROM training
+            WHERE date = ?
+            AND time LIKE ?
+            AND exercise = ?
+          `,
           args: [oldDate, `${oldTime}%`, exercise]
         })
       }
-      
-      // 新しいデータを挿入
-      const time = datetime ? new Date(datetime).toTimeString().slice(0, 8) : new Date().toTimeString().slice(0, 8)
-      const intervalValue = interval_seconds !== undefined ? parseInt(interval_seconds) : 60
-      
-      console.log('🔥 Inserting new data with time:', time, 'interval_seconds:', intervalValue)
-      
-      if (Array.isArray(sets) && sets.length > 0) {
-        for (let i = 0; i < sets.length; i++) {
-          const set = sets[i]
-          const reps = parseInt(set.reps)
-          const weight = parseFloat(set.weight)
-          const negative = parseInt(set.negative) || 3
-          
-          if (isNaN(reps) || isNaN(weight)) {
-            console.warn('🔥 Skipping invalid set:', set)
-            continue
-          }
-          
-          console.log(`🔥 Inserting set ${i + 1}:`, { date, time: `${time}.${i}`, exercise, setNum: i + 1, reps, weight, negative, interval_seconds: intervalValue })
-          
-          await db.execute({
-            sql: `INSERT INTO training (date, time, exercise, sets, reps, weight, negative, interval_seconds)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [date, `${time}.${i}`, exercise, i + 1, reps, weight, negative, intervalValue]
-          })
-        }
+
+      const time = datetime
+        ? new Date(datetime).toTimeString().slice(0, 8)
+        : new Date().toTimeString().slice(0, 8)
+
+      const intervalValue =
+        interval_seconds !== undefined
+          ? parseInt(interval_seconds)
+          : 60
+
+      for (let i = 0; i < sets.length; i++) {
+        const set = sets[i]
+
+        const reps = parseInt(set.reps || 0)
+        const weight = parseFloat(set.weight || 0)
+        const negative = parseInt(set.negative) || 3
+
+        if (isNaN(reps) || isNaN(weight)) continue
+
+        await db.execute({
+          sql: `
+            INSERT INTO training
+            (date, time, exercise, sets, reps, weight, negative, interval_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            date,
+            `${time}.${i}`,
+            exercise,
+            i + 1,
+            reps,
+            weight,
+            negative,
+            intervalValue
+          ]
+        })
       }
-      
-      console.log('🔥 PUT operation completed successfully')
-      res.status(200).json({ message: '更新しました' })
+
+      res.status(200).json({
+        message: '更新しました'
+      })
     } catch (error) {
       console.error('🔥 Error updating training:', error)
-      res.status(500).json({ error: '更新に失敗しました' })
+
+      res.status(500).json({
+        error: '更新に失敗しました',
+        detail: error.message
+      })
     }
-  } else if (req.method === 'DELETE') {
+  }
+
+  // =========================
+  // DELETE
+  // =========================
+  else if (req.method === 'DELETE') {
     try {
-      const datetime = req.url.split('/').pop().split('?')[0]
-      const decodedDatetime = decodeURIComponent(datetime)
-      
-      console.log('DELETE request for datetime:', decodedDatetime)
-      
-      const date = decodedDatetime.split('T')[0]
-      const time = decodedDatetime.split('T')[1]
-      
+      const url = new URL(req.url, 'http://localhost')
+      const datetime = url.searchParams.get('datetime')
+
+      if (!datetime) {
+        return res.status(400).json({
+          error: 'datetime が必要です'
+        })
+      }
+
+      const date = datetime.split('T')[0]
+      const time = datetime.split('T')[1]
+
       await db.execute({
-        sql: 'DELETE FROM training WHERE date = ? AND time LIKE ?',
+        sql: `
+          DELETE FROM training
+          WHERE date = ?
+          AND time LIKE ?
+        `,
         args: [date, `${time}%`]
       })
-      res.status(200).json({ message: '削除しました' })
+
+      res.status(200).json({
+        message: '削除しました'
+      })
     } catch (error) {
-      console.error('Error deleting training:', error)
-      res.status(500).json({ error: '削除に失敗しました' })
+      console.error('🔥 Error deleting training:', error)
+
+      res.status(500).json({
+        error: '削除に失敗しました',
+        detail: error.message
+      })
     }
-  } else {
-    console.log('🔥 Method not allowed. Received method:', req.method)
-    res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // =========================
+  // METHOD NOT ALLOWED
+  // =========================
+  else {
+    res.status(405).json({
+      error: 'Method not allowed'
+    })
   }
 }
