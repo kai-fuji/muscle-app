@@ -41,16 +41,10 @@ export default function Training() {
   
   const audioRef = useRef(null)
 
-  // カレンダー月が変わったときにデータを再取得
   useEffect(() => {
     fetchData()
     fetchExercises()
   }, [currentMonth])
-
-  // ビューまたはグラフ期間が変わったときにデータを再取得
-  useEffect(() => {
-    fetchData()
-  }, [view, graphPeriod])
 
   useEffect(() => {
     if (!intervalRunning || timerMode !== 'interval') return
@@ -146,35 +140,11 @@ export default function Training() {
   const fetchData = async () => {
     try {
       let url = '/api/training'
-      
       if (view === 'calendar') {
-        // カレンダービュー：特定月のデータを取得
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
         url = `/api/training?year=${year}&month=${month}`
-      } else if (view === 'graph') {
-        // グラフビュー：期間に応じたデータを取得
-        const now = new Date()
-        let startDate
-        
-        if (graphPeriod === '3months') {
-          startDate = subMonths(now, 3)
-        } else if (graphPeriod === '6months') {
-          startDate = subMonths(now, 6)
-        } else if (graphPeriod === '1year') {
-          startDate = subMonths(now, 12)
-        }
-        // 'all' の場合はパラメータなし（全データ）
-        
-        if (startDate) {
-          const year = format(startDate, 'yyyy')
-          const month = format(startDate, 'M')
-          const endYear = format(now, 'yyyy')
-          const endMonth = format(now, 'M')
-          url = `/api/training?startYear=${year}&startMonth=${month}&endYear=${endYear}&endMonth=${endMonth}`
-        }
       }
-      // リストビューの場合はデフォルト（過去90日）
       
       const res = await fetch(url)
       const json = await res.json()
@@ -387,8 +357,19 @@ export default function Training() {
   }
 
   const getExerciseHistory = (exerciseName) => {
-    // データは既にサーバー側で期間フィルタリング済みなので、クライアント側では全て表示
-    const filteredData = data.filter(item => item.exercise === exerciseName)
+    let filteredData = data.filter(item => item.exercise === exerciseName)
+    
+    const now = new Date()
+    if (graphPeriod === '3months') {
+      const threeMonthsAgo = subMonths(now, 3)
+      filteredData = filteredData.filter(item => new Date(item.date) >= threeMonthsAgo)
+    } else if (graphPeriod === '6months') {
+      const sixMonthsAgo = subMonths(now, 6)
+      filteredData = filteredData.filter(item => new Date(item.date) >= sixMonthsAgo)
+    } else if (graphPeriod === '1year') {
+      const oneYearAgo = subMonths(now, 12)
+      filteredData = filteredData.filter(item => new Date(item.date) >= oneYearAgo)
+    }
     
     return filteredData
       .sort((a, b) => new Date(a.date) - new Date(b.date))
