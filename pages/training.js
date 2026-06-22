@@ -2,13 +2,12 @@
 import { useState, useEffect, useRef } from 'react'
 import Card from '../components/Card'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, subDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon, CalendarIcon, BarChartIcon, ListIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from '../components/Icons'
 
 export default function Training() {
   const [data, setData] = useState([])
-  const [historyData, setHistoryData] = useState([]) // 前回履歴用（常に90日分）
   const [exercises, setExercises] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDatetime, setEditingDatetime] = useState(null)
@@ -27,7 +26,7 @@ export default function Training() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [view, setView] = useState('calendar')
   const [selectedExercise, setSelectedExercise] = useState(null)
-  const [graphPeriod, setGraphPeriod] = useState('all')
+  const [graphPeriod, setGraphPeriod] = useState('1month') // デフォルトを1か月に変更
 
   const [timerWidgetExpanded, setTimerWidgetExpanded] = useState(false)
   const [timerMode, setTimerMode] = useState('interval')
@@ -42,23 +41,25 @@ export default function Training() {
   
   const audioRef = useRef(null)
 
-  // 初回ロード時に前回履歴用データ（90日分）を取得
-  useEffect(() => {
-    fetchHistoryData()
-    fetchExercises()
-  }, [])
-
-  // ビューまたは月が変わったときに表示用データを取得
+  // 初回ロードと月変更時
   useEffect(() => {
     fetchData()
-  }, [view, currentMonth])
+    fetchExercises()
+  }, [currentMonth])
+
+  // ビュー切り替えまたは期間変更時にデータ再取得
+  useEffect(() => {
+    if (view === 'graph' || view === 'list') {
+      fetchData()
+    }
+  }, [view, graphPeriod])
 
   useEffect(() => {
     if (!intervalRunning || timerMode !== 'interval') return
 
     if (intervalRemaining <= 0) {
       playSound()
-      setIntervalRunning(false)
+      setInterRunning(false)
       setIntervalRemaining(intervalTime)
       return
     }
@@ -144,28 +145,16 @@ export default function Training() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // 前回履歴用データ（90日分）を取得
-  const fetchHistoryData = async () => {
-    try {
-      const res = await fetch('/api/training') // パラメータなし = 90日分
-      const json = await res.json()
-      setHistoryData(json)
-    } catch (error) {
-      console.error('Error fetching history data:', error)
-    }
-  }
-
-  // 表示用データを取得（ビューによって異なる）
   const fetchData = async () => {
     try {
       let url = '/api/training'
       if (view === 'calendar') {
-        // カレンダービュー：特定月のデータを取得
+        // カレンダービュー：特定月のデータ
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
         url = `/api/training?year=${year}&month=${month}`
       }
-      // graph, listビューの場合はパラメータなし = 90日分
+      // グラフ・リストビューは常に90日分取得（フロントでフィルタリング）
       
       const res = await fetch(url)
       const json = await res.json()
@@ -230,7 +219,6 @@ export default function Training() {
       }
       
       fetchData()
-      fetchHistoryData() // 前回履歴用データも更新
       setShowForm(false)
       setEditingDatetime(null)
       setFormData({
@@ -272,16 +260,21 @@ export default function Training() {
     if (!confirm('このトレーニングデータを削除しますか？')) return
     
     try {
-      const res = await fetch(`/api/training/${encodeURIComponent(datetime)}`, {
+      const res = await fetch(`/api/training?datetime=${encodeURIComponent(datetime)}`, {
         method: 'DELETE'
       })
       
-      if (res.ok) {
-        fetchData()
-        fetchHistoryData() // 前回履歴用データも更新
+      if (!res.ok) {
+        const errorText = await res.text()
+        alert('削除に失敗しました: ' + errorText)
+        return
       }
+      
+      fetchData()
+      setSelectedDate(null)
     } catch (error) {
       console.error('Error deleting data:', error)
+      alert('削除中にエラーが発生しました')
     }
   }
 
@@ -337,9 +330,9 @@ export default function Training() {
     const newExercises = [...formData.exercises]
     newExercises[index][field] = value
     
-    // 種目が変更された場合、前回履歴を取得（historyDataから取得）
+    // 種目が変更された場合、前回履歴を取得
     if (field === 'exercise' && value) {
-      const history = historyData
+      const history = data
         .filter(item => item.exercise === value)
         .sort((a, b) => new Date(b.datetime || b.date) - new Date(a.datetime || a.date))
       newExercises[index].previousHistory = history.length > 0 ? history[0] : null
@@ -371,17 +364,22 @@ export default function Training() {
   const getExerciseHistory = (exerciseName) => {
     let filteredData = data.filter(item => item.exercise === exerciseName)
     
+    // 期間でフィルタリング
     const now = new Date()
-    if (graphPeriod === '3months') {
-      const threeMonthsAgo = subMonths(now, 3)
-      filteredData = filteredData.filter(item => new Date(item.date) >= threeMonthsAgo)
+    if (graphPeriod === '1month') {
+      const cutoffDate = subDays(now, 30)
+      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
+    } else if (graphPeriod === '3months') {
+      const cutoffDate = subDays(now, 90)
+      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
     } else if (graphPeriod === '6months') {
-      const sixMonthsAgo = subMonths(now, 6)
-      filteredData = filteredData.filter(item => new Date(item.date) >= sixMonthsAgo)
+      const cutoffDate = subDays(now, 180)
+      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
     } else if (graphPeriod === '1year') {
-      const oneYearAgo = subMonths(now, 12)
-      filteredData = filteredData.filter(item => new Date(item.date) >= oneYearAgo)
+      const cutoffDate = subDays(now, 365)
+      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
     }
+    // 'all'の場合はフィルタリングなし（90日分全て表示）
     
     return filteredData
       .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -1000,14 +998,14 @@ export default function Training() {
               
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setGraphPeriod('all')}
+                  onClick={() => setGraphPeriod('1month')}
                   className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === 'all'
+                    graphPeriod === '1month'
                       ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
                       : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
                   }`}
                 >
-                  全期間
+                  1ヶ月
                 </button>
                 <button
                   onClick={() => setGraphPeriod('3months')}
@@ -1030,14 +1028,14 @@ export default function Training() {
                   6ヶ月
                 </button>
                 <button
-                  onClick={() => setGraphPeriod('1year')}
+                  onClick={() => setGraphPeriod('all')}
                   className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === '1year'
+                    graphPeriod === 'all'
                       ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
                       : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
                   }`}
                 >
-                  1年
+                  全期間
                 </button>
               </div>
             </div>
