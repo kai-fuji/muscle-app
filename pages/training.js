@@ -8,6 +8,7 @@ import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIc
 
 export default function Training() {
   const [data, setData] = useState([])
+  const [historyData, setHistoryData] = useState([]) // 前回履歴用（常に90日分）
   const [exercises, setExercises] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDatetime, setEditingDatetime] = useState(null)
@@ -41,10 +42,16 @@ export default function Training() {
   
   const audioRef = useRef(null)
 
+  // 初回ロード時に前回履歴用データ（90日分）を取得
+  useEffect(() => {
+    fetchHistoryData()
+    fetchExercises()
+  }, [])
+
+  // ビューまたは月が変わったときに表示用データを取得
   useEffect(() => {
     fetchData()
-    fetchExercises()
-  }, [currentMonth])
+  }, [view, currentMonth])
 
   useEffect(() => {
     if (!intervalRunning || timerMode !== 'interval') return
@@ -137,14 +144,28 @@ export default function Training() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  // 前回履歴用データ（90日分）を取得
+  const fetchHistoryData = async () => {
+    try {
+      const res = await fetch('/api/training') // パラメータなし = 90日分
+      const json = await res.json()
+      setHistoryData(json)
+    } catch (error) {
+      console.error('Error fetching history data:', error)
+    }
+  }
+
+  // 表示用データを取得（ビューによって異なる）
   const fetchData = async () => {
     try {
       let url = '/api/training'
       if (view === 'calendar') {
+        // カレンダービュー：特定月のデータを取得
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
         url = `/api/training?year=${year}&month=${month}`
       }
+      // graph, listビューの場合はパラメータなし = 90日分
       
       const res = await fetch(url)
       const json = await res.json()
@@ -209,6 +230,7 @@ export default function Training() {
       }
       
       fetchData()
+      fetchHistoryData() // 前回履歴用データも更新
       setShowForm(false)
       setEditingDatetime(null)
       setFormData({
@@ -250,26 +272,16 @@ export default function Training() {
     if (!confirm('このトレーニングデータを削除しますか？')) return
     
     try {
-      const res = await fetch(`/api/training?datetime=${encodeURIComponent(datetime)}`, {
+      const res = await fetch(`/api/training/${encodeURIComponent(datetime)}`, {
         method: 'DELETE'
       })
       
       if (res.ok) {
         fetchData()
-        if (selectedDate) {
-          // カレンダーの詳細ビューを更新
-          const workoutsOnDate = getWorkoutsForDate(selectedDate)
-          if (workoutsOnDate.length === 0) {
-            setSelectedDate(null)
-          }
-        }
-      } else {
-        const errorData = await res.json()
-        alert('削除に失敗しました: ' + (errorData.error || '不明なエラー'))
+        fetchHistoryData() // 前回履歴用データも更新
       }
     } catch (error) {
       console.error('Error deleting data:', error)
-      alert('削除中にエラーが発生しました')
     }
   }
 
@@ -325,9 +337,9 @@ export default function Training() {
     const newExercises = [...formData.exercises]
     newExercises[index][field] = value
     
-    // 種目が変更された場合、前回履歴を取得
+    // 種目が変更された場合、前回履歴を取得（historyDataから取得）
     if (field === 'exercise' && value) {
-      const history = data
+      const history = historyData
         .filter(item => item.exercise === value)
         .sort((a, b) => new Date(b.datetime || b.date) - new Date(a.datetime || a.date))
       newExercises[index].previousHistory = history.length > 0 ? history[0] : null
