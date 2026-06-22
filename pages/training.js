@@ -250,15 +250,26 @@ export default function Training() {
     if (!confirm('このトレーニングデータを削除しますか？')) return
     
     try {
-      const res = await fetch(`/api/training/${encodeURIComponent(datetime)}`, {
+      const res = await fetch(`/api/training?datetime=${encodeURIComponent(datetime)}`, {
         method: 'DELETE'
       })
       
       if (res.ok) {
         fetchData()
+        if (selectedDate) {
+          // カレンダーの詳細ビューを更新
+          const workoutsOnDate = getWorkoutsForDate(selectedDate)
+          if (workoutsOnDate.length === 0) {
+            setSelectedDate(null)
+          }
+        }
+      } else {
+        const errorData = await res.json()
+        alert('削除に失敗しました: ' + (errorData.error || '不明なエラー'))
       }
     } catch (error) {
       console.error('Error deleting data:', error)
+      alert('削除中にエラーが発生しました')
     }
   }
 
