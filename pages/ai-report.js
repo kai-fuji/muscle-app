@@ -8,76 +8,105 @@ export default function AIReport() {
   const [allData, setAllData] = useState(null)
   const [prompt, setPrompt] = useState('')
   const [copied, setCopied] = useState(false)
-  const [period, setPeriod] = useState('1month') // デフォルトを1か月に変更
+  const [period, setPeriod] = useState('1month')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
+  // periodが変わったらデータを再取得
   useEffect(() => {
     fetchAllData()
-  }, [])
+  }, [period])
 
   const fetchAllData = async () => {
     try {
+      setLoading(true)
+      setError(null)
+      
+      // 期間に応じた日数を計算
+      const getDaysFromPeriod = () => {
+        switch (period) {
+          case '1month': return 30
+          case '3months': return 90
+          case '6months': return 180
+          case '1year': return 365
+          default: return null // 'all'の場合はnull
+        }
+      }
+
+      const days = getDaysFromPeriod()
+      
+      // APIリクエストのURLを構築（期間パラメータを追加）
+      const bodyUrl = '/api/body-data'
+      const nutritionUrl = '/api/nutrition'
+      // トレーニングAPIは期間を制限して取得（軽量化）
+      const trainingUrl = days ? `/api/training?days=${days}` : '/api/training'
+      
+      console.log('Fetching with period:', period, 'days:', days)
+      console.log('Training URL:', trainingUrl)
+      
       const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
-        fetch('/api/body-data'),
-        fetch('/api/nutrition'),
-        fetch('/api/training')
+        fetch(bodyUrl),
+        fetch(nutritionUrl),
+        // トレーニングAPIにタイムアウトを設定（15秒）
+        Promise.race([
+          fetch(trainingUrl),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('トレーニングデータの取得がタイムアウトしました')), 15000)
+          )
+        ])
       ])
+      
+      if (!bodyRes.ok || !nutritionRes.ok || !trainingRes.ok) {
+        throw new Error('データの取得に失敗しました')
+      }
+      
       const bodyData = await bodyRes.json()
       const nutritionData = await nutritionRes.json()
       const trainingData = await trainingRes.json()
 
-      const data = {
-        body_data: bodyData,
-        nutrition_data: nutritionData,
-        training_data: trainingData
+      console.log('Fetched data:', { bodyData, nutritionData, trainingData })
+
+      // クライアント側でも期間フィルタリングを適用（念のため）
+      const filterByDate = (data) => {
+        if (!days) return data
+        const cutoffDate = new Date()
+        cutoffDate.setDate(cutoffDate.getDate() - days)
+        return data.filter(d => new Date(d.date) >= cutoffDate)
       }
 
+      const data = {
+        body_data: Array.isArray(bodyData) ? filterByDate(bodyData) : [],
+        nutrition_data: Array.isArray(nutritionData) ? filterByDate(nutritionData) : [],
+        training_data: Array.isArray(trainingData) ? filterByDate(trainingData) : []
+      }
+
+      console.log('Processed and filtered data:', data)
+      console.log('Data counts:', {
+        body: data.body_data.length,
+        nutrition: data.nutrition_data.length,
+        training: data.training_data.length
+      })
+      
       setAllData(data)
+      generatePrompt(data)
+      setLoading(false)
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError(error.message)
+      setLoading(false)
     }
   }
-
-  // 期間フィルター処理
-  const filterDataByPeriod = (data) => {
-    if (period === 'all') return data
-
-    const now = new Date()
-    let cutoffDate
-
-    switch (period) {
-      case '1month':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
-        break
-      case '3months':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-        break
-      case '6months':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
-        break
-      case '1year':
-        cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
-        break
-      default:
-        return data
-    }
-
-    return {
-      body_data: data.body_data.filter(d => new Date(d.date) >= cutoffDate),
-      nutrition_data: data.nutrition_data.filter(d => new Date(d.date) >= cutoffDate),
-      training_data: data.training_data.filter(d => new Date(d.date) >= cutoffDate)
-    }
-  }
-
-  // periodが変わったらプロンプトを再生成
-  useEffect(() => {
-    if (allData) {
-      const filteredData = filterDataByPeriod(allData)
-      generatePrompt(filteredData)
-    }
-  }, [period, allData])
 
   const generatePrompt = (data) => {
-    const promptText = `# 筋肥大データ分析依頼
+    const periodLabel = {
+      '1month': '過去1か月',
+      '3months': '過去3か月',
+      '6months': '過去6か月',
+      '1year': '過去1年',
+      'all': '全期間'
+    }[period]
+
+    const promptText = `# 筋肥大データ分析依頼（${periodLabel}のデータ）
 
 以下のデータを分析して、リーンバルク（脂肪を極力抑えた筋肥大）の観点から評価とアドバイスをお願いします。
 
@@ -104,7 +133,7 @@ export default function AIReport() {
 
 ---
 
-## データ
+## データ（${periodLabel}）
 
 \`\`\`json
 ${JSON.stringify(data, null, 2)}
@@ -114,6 +143,7 @@ ${JSON.stringify(data, null, 2)}
 
 上記データを分析して、詳細なレポートをお願いします。`
 
+    console.log('Generated prompt length:', promptText.length)
     setPrompt(promptText)
   }
 
@@ -124,8 +154,7 @@ ${JSON.stringify(data, null, 2)}
   }
 
   const downloadJSON = () => {
-    const filteredData = filterDataByPeriod(allData)
-    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -140,15 +169,6 @@ ${JSON.stringify(data, null, 2)}
     trainingRecords: allData.training_data.length
   } : null
 
-  const filteredStats = allData && period !== 'all' ? (() => {
-    const filtered = filterDataByPeriod(allData)
-    return {
-      bodyRecords: filtered.body_data.length,
-      nutritionRecords: filtered.nutrition_data.length,
-      trainingRecords: filtered.training_data.length
-    }
-  })() : stats
-
   return (
     <div>
       {/* ヘッダー */}
@@ -160,8 +180,7 @@ ${JSON.stringify(data, null, 2)}
           { value: '1month', label: '1か月' },
           { value: '3months', label: '3か月' },
           { value: '6months', label: '6か月' },
-          { value: '1year', label: '1年' },
-          { value: 'all', label: '全期間' }
+          { value: '1year', label: '1年' }
         ].map(({ value, label }) => (
           <button
             key={value}
@@ -177,56 +196,86 @@ ${JSON.stringify(data, null, 2)}
         ))}
       </div>
 
+      {/* ローディング表示 */}
+      {loading && (
+        <Card>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">データを読み込み中...</p>
+            <p className="text-gray-500 text-sm mt-2">トレーニングデータの取得には時間がかかる場合があります</p>
+          </div>
+        </Card>
+      )}
+
+      {/* エラー表示 */}
+      {error && (
+        <Card>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4 text-red-400">⚠️</div>
+            <h3 className="text-xl font-bold text-gray-100 mb-2">エラーが発生しました</h3>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={fetchAllData}
+              className="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
+            >
+              再読み込み
+            </button>
+          </div>
+        </Card>
+      )}
+
       {/* データサマリー */}
-      {filteredStats && (
+      {!loading && !error && stats && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><BodyDataIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{filteredStats.bodyRecords}</div>
+            <div className="text-2xl font-bold text-white">{stats.bodyRecords}</div>
             <div className="text-sm text-gray-400">身体データ</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><NutritionIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{filteredStats.nutritionRecords}</div>
+            <div className="text-2xl font-bold text-white">{stats.nutritionRecords}</div>
             <div className="text-sm text-gray-400">栄養データ</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><TrainingIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{filteredStats.trainingRecords}</div>
+            <div className="text-2xl font-bold text-white">{stats.trainingRecords}</div>
             <div className="text-sm text-gray-400">トレーニング</div>
           </div>
         </div>
       )}
 
       {/* 使い方ガイド */}
-      <Card title={<><ClipboardIcon size={20} className="inline mr-1" />使い方</>}>
-        <div className="space-y-4">
-          <div className="flex items-start">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">1</span>
-            <div>
-              <h4 className="font-bold text-gray-100">プロンプトをコピー</h4>
-              <p className="text-sm text-gray-400">下の「プロンプトをコピー」ボタンをクリック</p>
+      {!loading && !error && (
+        <Card title={<><ClipboardIcon size={20} className="inline mr-1" />使い方</>}>
+          <div className="space-y-4">
+            <div className="flex items-start">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">1</span>
+              <div>
+                <h4 className="font-bold text-gray-100">プロンプトをコピー</h4>
+                <p className="text-sm text-gray-400">下の「プロンプトをコピー」ボタンをクリック</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">2</span>
+              <div>
+                <h4 className="font-bold text-gray-100">AIに貼り付け</h4>
+                <p className="text-sm text-gray-400">ChatGPT、Claude、GeminiなどにPaste</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">3</span>
+              <div>
+                <h4 className="font-bold text-gray-100">詳細な分析を受け取る</h4>
+                <p className="text-sm text-gray-400">AIがデータを分析してアドバイスを提供</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-start">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">2</span>
-            <div>
-              <h4 className="font-bold text-gray-100">AIに貼り付け</h4>
-              <p className="text-sm text-gray-400">ChatGPT、Claude、GeminiなどにPaste</p>
-            </div>
-          </div>
-          <div className="flex items-start">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">3</span>
-            <div>
-              <h4 className="font-bold text-gray-100">詳細な分析を受け取る</h4>
-              <p className="text-sm text-gray-400">AIがデータを分析してアドバイスを提供</p>
-            </div>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* プロンプト表示 */}
-      {prompt && (
+      {!loading && !error && prompt && (
         <Card title={<><ClipboardIcon size={20} className="inline mr-1" />生成されたプロンプト</>}>
           <div className="bg-gray-700 rounded-xl p-4 mb-4 max-h-96 overflow-y-auto">
             <pre className="text-sm text-gray-100 whitespace-pre-wrap">{prompt}</pre>
@@ -253,7 +302,7 @@ ${JSON.stringify(data, null, 2)}
       )}
 
       {/* データがない場合 */}
-      {filteredStats && (filteredStats.bodyRecords === 0 && filteredStats.nutritionRecords === 0 && filteredStats.trainingRecords === 0) && (
+      {!loading && !error && stats && (stats.bodyRecords === 0 && stats.nutritionRecords === 0 && stats.trainingRecords === 0) && (
         <Card>
           <div className="text-center py-12">
             <div className="text-6xl mb-4"><AIIcon size={64} className="text-gray-400" /></div>
