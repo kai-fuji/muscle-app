@@ -16,12 +16,49 @@ export default async function handler(req, res) {
       const url = new URL(req.url, 'http://localhost')
       const year = url.searchParams.get('year')
       const month = url.searchParams.get('month')
+      const startYear = url.searchParams.get('startYear')
+      const startMonth = url.searchParams.get('startMonth')
+      const endYear = url.searchParams.get('endYear')
+      const endMonth = url.searchParams.get('endMonth')
+      const days = url.searchParams.get('days') // AI解析レポート用
 
       let query
       let args = []
 
-      if (year && month) {
-        // 特定月のデータを取得
+      if (days) {
+        // AI解析レポート用：指定された日数分のデータを取得
+        const daysNum = parseInt(days)
+        console.log(`🔥 Fetching data for last ${daysNum} days`)
+        
+        query = `
+          SELECT *
+          FROM training
+          WHERE date >= date('now', '-${daysNum} days')
+        `
+      } else if (startYear && startMonth && endYear && endMonth) {
+        // 日付範囲でデータを取得（グラフビュー用）
+        const paddedStartMonth = startMonth.padStart(2, '0')
+        const startDate = `${startYear}-${paddedStartMonth}-01`
+        
+        // 終了月の次月の1日を計算
+        let nextYear = parseInt(endYear)
+        let nextMonth = parseInt(endMonth) + 1
+        if (nextMonth > 12) {
+          nextMonth = 1
+          nextYear += 1
+        }
+        const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`
+        
+        console.log(`🔥 Fetching data for range (${startDate} to ${endDate})`)
+        
+        query = `
+          SELECT *
+          FROM training
+          WHERE date >= ? AND date < ?
+        `
+        args = [startDate, endDate]
+      } else if (year && month) {
+        // 特定月のデータを取得（カレンダービュー用）
         const paddedMonth = month.padStart(2, '0')
         const startDate = `${year}-${paddedMonth}-01`
         
@@ -43,7 +80,7 @@ export default async function handler(req, res) {
         `
         args = [startDate, endDate]
       } else {
-        // デフォルト：過去90日
+        // デフォルト：過去90日（リストビュー用）
         console.log('🔥 Fetching default data (last 90 days)')
         
         query = `
