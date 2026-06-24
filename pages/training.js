@@ -40,6 +40,8 @@ export default function Training() {
   const [tempoCount, setTempoCount] = useState(0)
   
   const audioRef = useRef(null)
+  const audioContextRef = useRef(null)
+  const wakeLockRef = useRef(null)
 
   // 初回ロードと月変更時
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function Training() {
 
     if (intervalRemaining <= 0) {
       playSound()
-      setInterRunning(false)
+      setIntervalRunning(false)
       setIntervalRemaining(intervalTime)
       return
     }

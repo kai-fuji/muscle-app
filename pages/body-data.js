@@ -130,12 +130,58 @@ export default function BodyData() {
       : 0
   }
 
-  // グラフ用のデータセットを準備
+  // グラフ用のデータセットを準備（日付ベース）
   const prepareWeightChartData = () => {
-    const reversedData = [...filteredData].reverse()
-    const weights = reversedData.map(d => d.weight)
-    const labels = reversedData.map(d => format(new Date(d.date), 'M/d'))
-    const movingAvg = calculateMovingAverage(weights)
+    if (filteredData.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    // データを日付でソート
+    const sortedData = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date))
+    
+    // 期間の開始日と終了日を取得
+    const startDate = new Date(sortedData[0].date)
+    const endDate = new Date(sortedData[sortedData.length - 1].date)
+    
+    // 全ての日付を生成
+    const allDates = []
+    const currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      allDates.push(new Date(currentDate))
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // データマップを作成（高速検索用）
+    const dataMap = new Map()
+    sortedData.forEach(d => {
+      dataMap.set(d.date, d.weight)
+    })
+    
+    // 各日付に対して体重データを取得（記録がない日はnull）
+    const weights = allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return dataMap.has(dateStr) ? dataMap.get(dateStr) : null
+    })
+    
+    const labels = allDates.map(date => format(date, 'M/d'))
+    
+    // 移動平均を計算（nullを考慮）
+    const calculateMovingAverageWithNulls = (data, windowSize = 7) => {
+      const result = []
+      for (let i = 0; i < data.length; i++) {
+        const window = data.slice(Math.max(0, i - windowSize + 1), i + 1)
+        const validValues = window.filter(v => v !== null)
+        if (validValues.length >= Math.ceil(windowSize / 2)) {
+          const sum = validValues.reduce((acc, val) => acc + val, 0)
+          result.push(parseFloat((sum / validValues.length).toFixed(2)))
+        } else {
+          result.push(null)
+        }
+      }
+      return result
+    }
+    
+    const movingAvg = calculateMovingAverageWithNulls(weights)
 
     return {
       labels,
@@ -153,6 +199,7 @@ export default function BodyData() {
           pointBackgroundColor: '#FF6B6B',
           pointBorderColor: '#000',
           pointBorderWidth: 2,
+          spanGaps: true, // nullをスキップして線を繋ぐ
         },
         {
           label: '移動平均(7日)',
@@ -165,6 +212,7 @@ export default function BodyData() {
           pointRadius: 0,
           pointHoverRadius: 4,
           borderDash: [5, 5],
+          spanGaps: true, // nullをスキップして線を繋ぐ
         },
       ]
     }
