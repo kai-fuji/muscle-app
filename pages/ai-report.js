@@ -8,7 +8,7 @@ export default function AIReport() {
   const [allData, setAllData] = useState(null)
   const [prompt, setPrompt] = useState('')
   const [copied, setCopied] = useState(false)
-  const [period, setPeriod] = useState('all') // 'all', '1month', '3months', '6months', '1year'
+  const [period, setPeriod] = useState('1month') // デフォルトを1か月に変更
 
   useEffect(() => {
     fetchAllData()
@@ -124,11 +124,12 @@ ${JSON.stringify(data, null, 2)}
   }
 
   const downloadJSON = () => {
-    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' })
+    const filteredData = filterDataByPeriod(allData)
+    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `muscle-data-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `muscle-data-${period}-${new Date().toISOString().split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -139,19 +140,28 @@ ${JSON.stringify(data, null, 2)}
     trainingRecords: allData.training_data.length
   } : null
 
+  const filteredStats = allData && period !== 'all' ? (() => {
+    const filtered = filterDataByPeriod(allData)
+    return {
+      bodyRecords: filtered.body_data.length,
+      nutritionRecords: filtered.nutrition_data.length,
+      trainingRecords: filtered.training_data.length
+    }
+  })() : stats
+
   return (
     <div>
       {/* ヘッダー */}
       <h2 className="text-2xl font-bold text-gray-100 mb-6"><span className="inline-flex items-center"><AIIcon size={28} className="text-gray-100 mr-2" />AI解析レポート</span></h2>
 
       {/* 期間選択 */}
-      <div className="flex space-x-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {[
-          { value: 'all', label: '全期間' },
           { value: '1month', label: '1か月' },
           { value: '3months', label: '3か月' },
           { value: '6months', label: '6か月' },
-          { value: '1year', label: '1年' }
+          { value: '1year', label: '1年' },
+          { value: 'all', label: '全期間' }
         ].map(({ value, label }) => (
           <button
             key={value}
@@ -168,21 +178,21 @@ ${JSON.stringify(data, null, 2)}
       </div>
 
       {/* データサマリー */}
-      {stats && (
+      {filteredStats && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><BodyDataIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{stats.bodyRecords}</div>
+            <div className="text-2xl font-bold text-white">{filteredStats.bodyRecords}</div>
             <div className="text-sm text-gray-400">身体データ</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><NutritionIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{stats.nutritionRecords}</div>
+            <div className="text-2xl font-bold text-white">{filteredStats.nutritionRecords}</div>
             <div className="text-sm text-gray-400">栄養データ</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><TrainingIcon size={24} className="text-gray-400" /></div>
-            <div className="text-2xl font-bold text-white">{stats.trainingRecords}</div>
+            <div className="text-2xl font-bold text-white">{filteredStats.trainingRecords}</div>
             <div className="text-sm text-gray-400">トレーニング</div>
           </div>
         </div>
@@ -201,7 +211,7 @@ ${JSON.stringify(data, null, 2)}
           <div className="flex items-start">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-400 text-gray-400 font-bold mr-3">2</span>
             <div>
-              <h4 className="font-bold text-gray-100">AIに販り付け</h4>
+              <h4 className="font-bold text-gray-100">AIに貼り付け</h4>
               <p className="text-sm text-gray-400">ChatGPT、Claude、GeminiなどにPaste</p>
             </div>
           </div>
@@ -226,7 +236,11 @@ ${JSON.stringify(data, null, 2)}
               onClick={copyToClipboard}
               className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium px-6 py-3 rounded-xl shadow-lg hover:from-cyan-600 hover:to-blue-700 transition-all duration-200 flex-1"
             >
-              {copied ? '<CheckIcon size={16} className="inline mr-1" />コピーしました！' : '<ClipboardIcon size={16} className="inline mr-1" />プロンプトをコピー'}
+              {copied ? (
+                <><CheckIcon size={16} className="inline mr-1" />コピーしました！</>
+              ) : (
+                <><ClipboardIcon size={16} className="inline mr-1" />プロンプトをコピー</>
+              )}
             </button>
             <button
               onClick={downloadJSON}
@@ -239,15 +253,15 @@ ${JSON.stringify(data, null, 2)}
       )}
 
       {/* データがない場合 */}
-      {stats && (stats.bodyRecords === 0 && stats.nutritionRecords === 0 && stats.trainingRecords === 0) && (
+      {filteredStats && (filteredStats.bodyRecords === 0 && filteredStats.nutritionRecords === 0 && filteredStats.trainingRecords === 0) && (
         <Card>
           <div className="text-center py-12">
             <div className="text-6xl mb-4"><AIIcon size={64} className="text-gray-400" /></div>
             <h3 className="text-xl font-bold text-gray-100 mb-2">
-              まだデータがありません
+              選択期間にデータがありません
             </h3>
             <p className="text-gray-400 mb-6">
-              分析には身体データ、栈養データ、トレーニングデータが必要です
+              分析には身体データ、栄養データ、トレーニングデータが必要です
             </p>
           </div>
         </Card>
