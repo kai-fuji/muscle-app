@@ -47,6 +47,18 @@ export default function Training() {
   useEffect(() => {
     fetchData()
     fetchExercises()
+    
+    // クリーンアップ：Wake Lockを解放
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release()
+        wakeLockRef.current = null
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
+    }
   }, [currentMonth])
 
   // ビュー切り替えまたは期間変更時にデータ再取得
@@ -98,19 +110,34 @@ export default function Training() {
     }
   }
 
-  const playBeep = () => {
-    const context = new (window.AudioContext || window.webkitAudioContext)()
-    const oscillator = context.createOscillator()
-    const gainNode = context.createGain()
-    
-    oscillator.connect(gainNode)
-    gainNode.connect(context.destination)
-    
-    oscillator.frequency.value = 800
-    gainNode.gain.value = 0.3
-    
-    oscillator.start(context.currentTime)
-    oscillator.stop(context.currentTime + 0.1)
+  const playBeep = async () => {
+    try {
+      // AudioContextを再利用または作成
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
+      }
+      
+      const context = audioContextRef.current
+      
+      // AudioContextがsuspended状態の場合は再開
+      if (context.state === 'suspended') {
+        await context.resume()
+      }
+      
+      const oscillator = context.createOscillator()
+      const gainNode = context.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(context.destination)
+      
+      oscillator.frequency.value = 800
+      gainNode.gain.value = 0.3
+      
+      oscillator.start(context.currentTime)
+      oscillator.stop(context.currentTime + 0.1)
+    } catch (error) {
+      console.error('Beep failed:', error)
+    }
   }
 
   const startIntervalTimer = () => {
@@ -126,7 +153,17 @@ export default function Training() {
     setIntervalRemaining(intervalTime)
   }
 
-  const startTempoTimer = () => {
+  const startTempoTimer = async () => {
+    // Wake Lockを取得（スマホの画面がオフにならないように）
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen')
+        console.log('Wake Lock acquired')
+      }
+    } catch (err) {
+      console.error('Wake Lock failed:', err)
+    }
+    
     playBeep()
     setTempoRunning(true)
     setTempoCount(0)
@@ -134,11 +171,23 @@ export default function Training() {
 
   const pauseTempoTimer = () => {
     setTempoRunning(false)
+    // Wake Lockを解放
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release()
+      wakeLockRef.current = null
+      console.log('Wake Lock released')
+    }
   }
 
   const resetTempoTimer = () => {
     setTempoRunning(false)
     setTempoCount(0)
+    // Wake Lockを解放
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release()
+      wakeLockRef.current = null
+      console.log('Wake Lock released')
+    }
   }
 
   const formatTime = (seconds) => {
@@ -894,7 +943,7 @@ export default function Training() {
                   key={day.toISOString()}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => handleDateClick(day)}
-                  className={`aspect-square p-2 rounded-xl cursor-pointer transition-all border-2 ${
+                  className={`min-h-[80px] p-2 rounded-xl cursor-pointer transition-all border-2 ${
                     isToday
                       ? 'border-cyan-500 bg-cyan-500/10'
                       : hasWorkout
@@ -1176,7 +1225,7 @@ function ExerciseProgressChart({ data, exercise }) {
 
   return (
     <div className="overflow-x-auto">
-      <svg width={width} height={height} className="mx-auto">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-full h-auto mx-auto" preserveAspectRatio="xMidYMid meet">
         <g transform={`translate(${margin.left}, ${margin.top})`}>
           {[0, 0.25, 0.5, 0.75, 1].map(ratio => (
             <line
