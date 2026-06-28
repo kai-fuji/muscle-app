@@ -40,7 +40,7 @@ export default function Nutrition() {
     
     try {
       const res = await fetch('/api/nutrition', {
-        method: 'POST',
+        method: editingDate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date: formData.date,
@@ -55,6 +55,7 @@ export default function Nutrition() {
       if (res.ok) {
         fetchData()
         setShowForm(false)
+        setEditingDate(null)
         setFormData({
           date: format(new Date(), 'yyyy-MM-dd'),
           calories: '',
@@ -67,6 +68,48 @@ export default function Nutrition() {
     } catch (error) {
       console.error('Error saving data:', error)
     }
+  }
+
+  const handleEdit = (entry) => {
+    setEditingDate(entry.date)
+    setFormData({
+      date: entry.date,
+      calories: entry.calories != null ? entry.calories.toString() : '',
+      protein: entry.protein != null ? entry.protein.toString() : '',
+      fat: entry.fat != null ? entry.fat.toString() : '',
+      carbs: entry.carbs != null ? entry.carbs.toString() : '',
+      sugar: entry.sugar != null ? entry.sugar.toString() : ''
+    })
+    setShowForm(true)
+  }
+
+  const handleDelete = async (date) => {
+    if (!confirm('このデータを削除しますか？')) return
+    
+    try {
+      const res = await fetch(`/api/nutrition?date=${date}`, {
+        method: 'DELETE'
+      })
+      
+      if (res.ok) {
+        fetchData()
+      }
+    } catch (error) {
+      console.error('Error deleting data:', error)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setShowForm(false)
+    setEditingDate(null)
+    setFormData({
+      date: format(new Date(), 'yyyy-MM-dd'),
+      calories: '',
+      protein: '',
+      fat: '',
+      carbs: '',
+      sugar: ''
+    })
   }
 
   // 期間フィルター処理
@@ -354,11 +397,27 @@ export default function Nutrition() {
                     <div className="font-medium text-gray-100">
                       {format(new Date(entry.date), 'yyyy年M月d日')}
                     </div>
-                    <div className="flex items-center">
-                      <span className="font-bold text-gray-100 mr-2">
-                        {entry.calories}kcal
-                      </span>
-                      {isOnTarget && <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-900/20 text-green-400 text-xs font-medium border border-green-500/30"><CheckIcon size={16} /></span>}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center">
+                        <span className="font-bold text-gray-100 mr-2">
+                          {entry.calories}kcal
+                        </span>
+                        {isOnTarget && <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-900/20 text-green-400 text-xs font-medium border border-green-500/30"><CheckIcon size={16} /></span>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(entry)}
+                          className="text-blue-400 hover:text-blue-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-900/20"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => handleDelete(entry.date)}
+                          className="text-red-400 hover:text-red-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-red-900/20"
+                        >
+                          削除
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
