@@ -320,7 +320,7 @@ export default function BodyData() {
     }
   }
 
-  // 体重とカロリーの重ねグラフ
+  // 体重とカロリーの重ねグラフ（左軸：体重、右軸：カロリー）
   const prepareWeightAndCaloriesChartData = () => {
     if (filteredData.length === 0) {
       return { labels: [], datasets: [] }
@@ -365,7 +365,7 @@ export default function BodyData() {
     
     const calories = allDates.map(date => {
       const dateStr = format(date, 'yyyy-MM-dd')
-      return caloriesMap.has(dateStr) ? caloriesMap.get(dateStr) / 100 : null // 100で割ってスケール調整
+      return caloriesMap.has(dateStr) ? caloriesMap.get(dateStr) : null // 100で割らない
     })
     
     const labels = allDates.map(date => format(date, 'M/d'))
@@ -390,7 +390,7 @@ export default function BodyData() {
           yAxisID: 'y',
         },
         {
-          label: 'カロリー (kcal ÷100)',
+          label: 'カロリー (kcal)',
           data: calories,
           borderColor: '#4ECDC4',
           backgroundColor: '#4ECDC430',
@@ -403,7 +403,7 @@ export default function BodyData() {
           pointBorderColor: '#000',
           pointBorderWidth: 2,
           spanGaps: true,
-          yAxisID: 'y',
+          yAxisID: 'y1', // 右軸を使用
         },
       ]
     }
@@ -563,9 +563,73 @@ export default function BodyData() {
           <Chart
             datasets={prepareWeightAndCaloriesChartData().datasets}
             labels={prepareWeightAndCaloriesChartData().labels}
+            customOptions={{
+              scales: {
+                y: {
+                  type: 'linear',
+                  position: 'left',
+                  grid: {
+                    color: '#2C2C2E',
+                    borderDash: [5, 5],
+                  },
+                  ticks: {
+                    color: '#FF6B6B',
+                    font: {
+                      size: 12,
+                      weight: 'bold',
+                    },
+                    callback: function(value) {
+                      return value + ' kg'
+                    }
+                  },
+                  title: {
+                    display: true,
+                    text: '体重 (kg)',
+                    color: '#FF6B6B',
+                    font: {
+                      size: 14,
+                      weight: 'bold',
+                    }
+                  }
+                },
+                y1: {
+                  type: 'linear',
+                  position: 'right',
+                  grid: {
+                    display: false, // 右軸のグリッドは非表示
+                  },
+                  ticks: {
+                    color: '#4ECDC4',
+                    font: {
+                      size: 12,
+                      weight: 'bold',
+                    },
+                    callback: function(value) {
+                      return value + ' kcal'
+                    }
+                  },
+                  title: {
+                    display: true,
+                    text: 'カロリー (kcal)',
+                    color: '#4ECDC4',
+                    font: {
+                      size: 14,
+                      weight: 'bold',
+                    }
+                  }
+                }
+              }
+            }}
           />
-          <div className="mt-4 text-sm text-gray-400 text-center">
-            ※カロリーは100で割った値で表示しています
+          <div className="mt-4 flex justify-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-[#FF6B6B]"></div>
+              <span className="text-gray-400">体重（左軸）</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-[#4ECDC4]"></div>
+              <span className="text-gray-400">カロリー（右軸）</span>
+            </div>
           </div>
         </Card>
       )}
