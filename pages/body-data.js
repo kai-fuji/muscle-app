@@ -8,6 +8,7 @@ import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIc
 
 export default function BodyData() {
   const [data, setData] = useState([])
+  const [nutritionData, setNutritionData] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDate, setEditingDate] = useState(null)
   const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
@@ -19,6 +20,7 @@ export default function BodyData() {
 
   useEffect(() => {
     fetchData()
+    fetchNutritionData()
   }, [])
 
   const fetchData = async () => {
@@ -28,6 +30,16 @@ export default function BodyData() {
       setData(json)
     } catch (error) {
       console.error('Error fetching data:', error)
+    }
+  }
+
+  const fetchNutritionData = async () => {
+    try {
+      const res = await fetch('/api/nutrition')
+      const json = await res.json()
+      setNutritionData(json)
+    } catch (error) {
+      console.error('Error fetching nutrition data:', error)
     }
   }
 
@@ -218,6 +230,185 @@ export default function BodyData() {
     }
   }
 
+  // 体脂肪率グラフ用のデータセットを準備
+  const prepareBodyFatChartData = () => {
+    if (filteredData.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    // データを日付でソート
+    const sortedData = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date))
+    
+    // 期間の開始日と終了日を取得
+    const startDate = new Date(sortedData[0].date)
+    const endDate = new Date(sortedData[sortedData.length - 1].date)
+    
+    // 全ての日付を生成
+    const allDates = []
+    const currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      allDates.push(new Date(currentDate))
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // データマップを作成
+    const dataMap = new Map()
+    sortedData.forEach(d => {
+      if (d.body_fat_percentage != null) {
+        dataMap.set(d.date, d.body_fat_percentage)
+      }
+    })
+    
+    // 各日付に対して体脂肪率データを取得
+    const bodyFats = allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return dataMap.has(dateStr) ? dataMap.get(dateStr) : null
+    })
+    
+    const labels = allDates.map(date => format(date, 'M/d'))
+    
+    // 移動平均を計算（nullを考慮）
+    const calculateMovingAverageWithNulls = (data, windowSize = 7) => {
+      const result = []
+      for (let i = 0; i < data.length; i++) {
+        const window = data.slice(Math.max(0, i - windowSize + 1), i + 1)
+        const validValues = window.filter(v => v !== null)
+        if (validValues.length >= Math.ceil(windowSize / 2)) {
+          const sum = validValues.reduce((acc, val) => acc + val, 0)
+          result.push(parseFloat((sum / validValues.length).toFixed(2)))
+        } else {
+          result.push(null)
+        }
+      }
+      return result
+    }
+    
+    const movingAvg = calculateMovingAverageWithNulls(bodyFats)
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '体脂肪率',
+          data: bodyFats,
+          borderColor: '#FFA07A',
+          backgroundColor: '#FFA07A30',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#FFA07A',
+          pointBorderColor: '#000',
+          pointBorderWidth: 2,
+          spanGaps: true,
+        },
+        {
+          label: '移動平均(7日)',
+          data: movingAvg,
+          borderColor: '#FFB366',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderDash: [5, 5],
+          spanGaps: true,
+        },
+      ]
+    }
+  }
+
+  // 体重とカロリーの重ねグラフ
+  const prepareWeightAndCaloriesChartData = () => {
+    if (filteredData.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    // データを日付でソート
+    const sortedBodyData = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date))
+    const filteredNutritionData = getFilteredData(nutritionData, period)
+    
+    // 期間の開始日と終了日を取得
+    const startDate = new Date(sortedBodyData[0].date)
+    const endDate = new Date(sortedBodyData[sortedBodyData.length - 1].date)
+    
+    // 全ての日付を生成
+    const allDates = []
+    const currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      allDates.push(new Date(currentDate))
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // 体重データマップ
+    const weightMap = new Map()
+    sortedBodyData.forEach(d => {
+      weightMap.set(d.date, d.weight)
+    })
+    
+    // カロリーデータマップ (日付ごとに集計)
+    const caloriesMap = new Map()
+    filteredNutritionData.forEach(d => {
+      if (!caloriesMap.has(d.date)) {
+        caloriesMap.set(d.date, 0)
+      }
+      caloriesMap.set(d.date, caloriesMap.get(d.date) + d.calories)
+    })
+    
+    // 各日付に対してデータを取得
+    const weights = allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return weightMap.has(dateStr) ? weightMap.get(dateStr) : null
+    })
+    
+    const calories = allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return caloriesMap.has(dateStr) ? caloriesMap.get(dateStr) / 100 : null // 100で割ってスケール調整
+    })
+    
+    const labels = allDates.map(date => format(date, 'M/d'))
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '体重 (kg)',
+          data: weights,
+          borderColor: '#FF6B6B',
+          backgroundColor: '#FF6B6B30',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#FF6B6B',
+          pointBorderColor: '#000',
+          pointBorderWidth: 2,
+          spanGaps: true,
+          yAxisID: 'y',
+        },
+        {
+          label: 'カロリー (kcal ÷100)',
+          data: calories,
+          borderColor: '#4ECDC4',
+          backgroundColor: '#4ECDC430',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#4ECDC4',
+          pointBorderColor: '#000',
+          pointBorderWidth: 2,
+          spanGaps: true,
+          yAxisID: 'y',
+        },
+      ]
+    }
+  }
+
   return (
     <div>
       {/* ヘッダー */}
@@ -360,11 +551,22 @@ export default function BodyData() {
       {filteredData.length > 0 && (
         <Card title="体脂肪率推移">
           <Chart
-            data={[...filteredData].reverse().map(d => d.body_fat_percentage)}
-            labels={[...filteredData].reverse().map(d => format(new Date(d.date), 'M/d'))}
-            title="体脂肪率"
-            color="#FFA07A"
+            datasets={prepareBodyFatChartData().datasets}
+            labels={prepareBodyFatChartData().labels}
           />
+        </Card>
+      )}
+
+      {/* 体重とカロリーの重ねグラフ */}
+      {filteredData.length > 0 && nutritionData.length > 0 && (
+        <Card title="体重 × カロリー推移">
+          <Chart
+            datasets={prepareWeightAndCaloriesChartData().datasets}
+            labels={prepareWeightAndCaloriesChartData().labels}
+          />
+          <div className="mt-4 text-sm text-gray-400 text-center">
+            ※カロリーは100で割った値で表示しています
+          </div>
         </Card>
       )}
 
