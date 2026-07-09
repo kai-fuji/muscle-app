@@ -215,10 +215,34 @@ export default function Training() {
         cacheKey = `${year}-${month.padStart(2, '0')}`
         url = `/api/training?year=${year}&month=${month}`
         console.log(`[Training Cache] Calendar view - checking cache for ${cacheKey}`)
+
       } else {
-        // グラフ・リストビュー：全データをキャッシュ
+        // グラフ・リストビュー：既存の全ての月のキャッシュを統合
+        console.log('[Training Cache] Graph/List view - loading all cached months')
+        
+        try {
+          const { getAllCachedData } = await import('../lib/cacheManager')
+          const cachedData = await getAllCachedData('training')
+          
+          if (cachedData && cachedData.length > 0) {
+            console.log(`[Training Cache] ✓ Loaded ${cachedData.length} records from all cached months`)
+            const formattedData = cachedData.map(item => ({
+              ...item,
+              date: item.datetime ? item.datetime.split('T')[0] : item.date,
+              sets: item.sets || []
+            }))
+            setData(formattedData)
+            return
+          }
+          
+          console.log('[Training Cache] No cached data found, fetching from API')
+        } catch (error) {
+          console.log('[Training Cache] getAllCachedData failed:', error)
+        }
+        
+        // キャッシュがない場合は全データをAPIから取得
         cacheKey = 'allData'
-        console.log('[Training Cache] Graph/List view - checking cache for allData')
+        console.log('[Training Cache] Falling back to API')
       }
       
       // キャッシュをチェック
