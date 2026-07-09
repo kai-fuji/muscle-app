@@ -200,26 +200,33 @@ export default function Training() {
     try {
       let url = '/api/training'
       
+      console.log(`[Training] Current view: ${view}`)
+      console.log(`[Training] Current month: ${format(currentMonth, 'yyyy-MM')}`)
+      
       if (view === 'calendar') {
         // カレンダービュー：特定月のデータ
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
         url = `/api/training?year=${year}&month=${month}`
+        console.log(`[Training] Fetching calendar data for ${year}-${month}`)
       } else {
-        // グラフ・リストビュー：直近1ヶ月分のみ取得
-        const endDate = format(new Date(), 'yyyy-MM-dd')
-        const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
-        url = `/api/training?startDate=${startDate}&endDate=${endDate}`
+        // グラフ・リストビュー：全データ取得
+        console.log('[Training] Fetching all data for graph/list view')
       }
       
-      console.log(`[Training] Fetching from: ${url}`)
+      console.log(`[Training] API URL: ${url}`)
       
       const res = await fetch(url)
       if (!res.ok) {
+        console.error(`[Training] API error: ${res.status} ${res.statusText}`)
         throw new Error(`API error: ${res.status}`)
       }
       
       const json = await res.json()
+      console.log(`[Training] Raw data from API: ${json.length} records`)
+      if (json.length > 0) {
+        console.log(`[Training] First record:`, json[0])
+      }
       
       // データを適切な形式に変換
       const formattedData = json.map(item => ({
@@ -228,28 +235,15 @@ export default function Training() {
         sets: item.sets || []
       }))
       
-      setData(formattedData)
-      console.log(`[Training] Data loaded: ${formattedData.length} records`)
-      
-      // バックグラウンドでIndexedDBにキャッシュ（エラーが出ても無視）
-      try {
-        if (typeof window !== 'undefined' && formattedData.length > 0) {
-          const { cacheMonthData, groupDataByMonth } = await import('../lib/cacheManager')
-          
-          // データを月ごとにグループ化
-          const grouped = groupDataByMonth(formattedData)
-          
-          // 各月をキャッシュに保存
-          for (const [month, monthData] of grouped.entries()) {
-            await cacheMonthData('training', month, monthData)
-            console.log(`[Training] Cached ${monthData.length} records for ${month}`)
-          }
-        }
-      } catch (cacheError) {
-        console.log('[Training] Cache save skipped:', cacheError.message)
+      console.log(`[Training] Formatted data: ${formattedData.length} records`)
+      if (formattedData.length > 0) {
+        console.log(`[Training] First formatted record:`, formattedData[0])
       }
+      
+      setData(formattedData)
+      console.log(`[Training] Data successfully set to state`)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('[Training] Error fetching data:', error)
     }
   }
 
@@ -1040,7 +1034,7 @@ export default function Training() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-white">種目を選択</h3>
               <div className="text-sm text-gray-400">
-                ※ 直近1ヶ月のデータを表示
+                ※ 全期間のデータを表示
               </div>
             </div>
             
@@ -1076,7 +1070,7 @@ export default function Training() {
       {view === 'list' && (
         <Card title="トレーニング履歴">
           <div className="mb-4 text-sm text-gray-400">
-            ※ 直近1ヶ月のデータを表示
+            ※ 全期間のデータを表示
           </div>
           <div className="space-y-4">
             {sortedData.map((entry, index) => (
@@ -1311,5 +1305,3 @@ function ExerciseProgressChart({ data, exercise }) {
     </div>
   )
 }
-
-
