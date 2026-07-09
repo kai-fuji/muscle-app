@@ -198,19 +198,50 @@ export default function Training() {
 
   const fetchData = async () => {
     try {
-      let url = '/api/training'
+      let startDate, endDate
+      
       if (view === 'calendar') {
-        // カレンダービュー：特定月のデータ
-        const year = format(currentMonth, 'yyyy')
-        const month = format(currentMonth, 'M')
-        url = `/api/training?year=${year}&month=${month}`
+        // カレンダービュー：現在表示中の月のデータのみ
+        startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
+        endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
+      } else {
+        // グラフ・リストビュー：期間に応じたデータ
+        endDate = format(new Date(), 'yyyy-MM-dd')
+        
+        if (graphPeriod === '1month') {
+          startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
+        } else if (graphPeriod === '3months') {
+          startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd')
+        } else if (graphPeriod === '6months') {
+          startDate = format(subDays(new Date(), 180), 'yyyy-MM-dd')
+        } else {
+          // 'all' の場合は1年分
+          startDate = format(subDays(new Date(), 365), 'yyyy-MM-dd')
+        }
       }
-      // グラフ・リストビューは常に90日分取得（フロントでフィルタリング）
       
-      const res = await fetch(url)
-      const json = await res.json()
+      console.log(`[Training] Fetching data for period: ${startDate} to ${endDate}`)
+
+      // IndexedDBからデータ取得（キャッシュ優先、不足分はTursoから自動取得）
+      const { getDataForPeriod } = await import('../lib/syncService')
       
-      setData(json)
+      const trainingData = await getDataForPeriod(
+        'training',
+        startDate,
+        endDate,
+        true // autoSync: 最新月を自動同期
+      )
+
+      // データを適切な形式に変換
+      const formattedData = trainingData.map(item => ({
+        ...item,
+        date: item.datetime ? item.datetime.split(' ')[0] : item.date,
+        sets: item.sets || []
+      }))
+
+      setData(formattedData)
+      
+      console.log(`[Training] Data loaded: ${formattedData.length} records`)
     } catch (error) {
       console.error('Error fetching data:', error)
     }
@@ -249,16 +280,14 @@ export default function Training() {
           method: editingDatetime ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            date: formData.date,
             datetime: datetime,
             exercise: exerciseData.exercise,
             sets: exerciseData.sets.map(s => ({
               weight: parseFloat(s.weight),
               reps: parseInt(s.reps),
-              negative: parseInt(s.negative) || 3
+              negative: parseInt(s.negative || 3)
             })),
-            interval_seconds: parseInt(exerciseData.interval_seconds),
-            old_datetime: editingDatetime
+            interval_seconds: parseInt(exerciseData.interval_seconds)
           })
         })
         
@@ -269,7 +298,6 @@ export default function Training() {
         }
       }
       
-      fetchData()
       setShowForm(false)
       setEditingDatetime(null)
       setFormData({
@@ -282,6 +310,7 @@ export default function Training() {
           previousHistory: null
         }]
       })
+      fetchData()
     } catch (error) {
       console.error('Error saving data:', error)
       alert('保存中にエラーが発生しました')
@@ -415,22 +444,8 @@ export default function Training() {
   const getExerciseHistory = (exerciseName) => {
     let filteredData = data.filter(item => item.exercise === exerciseName)
     
-    // 期間でフィルタリング
-    const now = new Date()
-    if (graphPeriod === '1month') {
-      const cutoffDate = subDays(now, 30)
-      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
-    } else if (graphPeriod === '3months') {
-      const cutoffDate = subDays(now, 90)
-      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
-    } else if (graphPeriod === '6months') {
-      const cutoffDate = subDays(now, 180)
-      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
-    } else if (graphPeriod === '1year') {
-      const cutoffDate = subDays(now, 365)
-      filteredData = filteredData.filter(item => new Date(item.date) >= cutoffDate)
-    }
-    // 'all'の場合はフィルタリングなし（90日分全て表示）
+    // データは既にfetchDataで期間フィルタリング済みなので、
+    // ここでは追加のフィルタリングは不要
     
     return filteredData
       .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -551,122 +566,106 @@ export default function Training() {
               </button>
             </div>
 
-            {timerMode === 'interval' && (
+            {timerMode === 'interval' ? (
               <div>
-                <motion.div
-                  animate={{ scale: intervalRunning && intervalRemaining <= 3 ? [1, 1.05, 1] : 1 }}
-                  transition={{ repeat: Infinity, duration: 1 }}
-                  className={`text-5xl font-bold text-center mb-4 ${
-                    intervalRemaining <= 10 ? 'text-red-400' : 'text-gray-100'
-                  }`}
-                >
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    インターバル時間
+                  </label>
+                  <select
+                    value={intervalTime}
+                    onChange={(e) => {
+                      const newTime = parseInt(e.target.value)
+                      setIntervalTime(newTime)
+                      if (!intervalRunning) {
+                        setIntervalRemaining(newTime)
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
+                  >
+                    <option value="30">30秒</option>
+                    <option value="45">45秒</option>
+                    <option value="60">60秒</option>
+                    <option value="90">90秒</option>
+                    <option value="120">120秒</option>
+                    <option value="180">180秒</option>
+                  </select>
+                </div>
+                <div className="text-6xl font-bold text-center mb-6 text-cyan-400">
                   {formatTime(intervalRemaining)}
-                </motion.div>
-
-                <div className="flex gap-2 mb-4">
+                </div>
+                <div className="flex gap-2">
                   {!intervalRunning ? (
                     <button
                       onClick={startIntervalTimer}
-                      className="flex-1 bg-transparent text-cyan-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center gap-1"
+                      className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2"
                     >
-                      <PlayIcon size={16} />
-                      開始
+                      <PlayIcon size={20} />
+                      スタート
                     </button>
                   ) : (
                     <button
                       onClick={pauseIntervalTimer}
-                      className="flex-1 bg-transparent text-red-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-red-400 hover:bg-red-400 hover:text-black transition-all flex items-center justify-center gap-1"
+                      className="flex-1 bg-yellow-600 text-white px-4 py-3 rounded-xl hover:bg-yellow-700 transition-all font-medium flex items-center justify-center gap-2"
                     >
-                      <PauseIcon size={16} />
-                      停止
+                      <PauseIcon size={20} />
+                      一時停止
                     </button>
                   )}
                   <button
                     onClick={resetIntervalTimer}
-                    className="flex-1 bg-transparent text-gray-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-gray-600 hover:bg-gray-700 hover:text-white transition-all flex items-center justify-center gap-1"
+                    className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
                   >
-                    <RotateIcon size={16} />
+                    <RotateIcon size={20} />
                     リセット
                   </button>
                 </div>
-
-                <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    インターバル時間（秒）
-                  </label>
-                  <input
-                    type="number"
-                    value={intervalTime}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value)
-                      setIntervalTime(val)
-                      setIntervalRemaining(val)
-                    }}
-                    disabled={intervalRunning}
-                    className="w-full px-3 py-2 bg-gray-900 border-2 border-gray-700 rounded-lg text-center text-xl font-bold text-gray-100 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
               </div>
-            )}
-
-            {timerMode === 'tempo' && (
+            ) : (
               <div>
-                <motion.div
-                  animate={{ scale: tempoRunning ? [1, 1.05, 1] : 1 }}
-                  transition={{ repeat: Infinity, duration: 1 }}
-                  className="text-5xl font-bold text-center mb-2 text-gray-100"
-                >
-                  {tempoCount}
-                </motion.div>
-
-                <div className="text-center text-gray-400 text-sm mb-4">
-                  ビープ回数
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    テンポ（間隔秒）
+                  </label>
+                  <select
+                    value={tempoInterval}
+                    onChange={(e) => setTempoInterval(parseInt(e.target.value))}
+                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
+                  >
+                    <option value="1">1秒</option>
+                    <option value="2">2秒</option>
+                    <option value="3">3秒</option>
+                    <option value="4">4秒</option>
+                  </select>
                 </div>
-
-                <div className="flex gap-2 mb-4">
+                <div className="text-6xl font-bold text-center mb-6 text-orange-400">
+                  {tempoCount}
+                </div>
+                <div className="flex gap-2">
                   {!tempoRunning ? (
                     <button
                       onClick={startTempoTimer}
-                      className="flex-1 bg-transparent text-cyan-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all flex items-center justify-center gap-1"
+                      className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2"
                     >
-                      <PlayIcon size={16} />
-                      開始
+                      <PlayIcon size={20} />
+                      スタート
                     </button>
                   ) : (
                     <button
                       onClick={pauseTempoTimer}
-                      className="flex-1 bg-transparent text-red-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-red-400 hover:bg-red-400 hover:text-black transition-all flex items-center justify-center gap-1"
+                      className="flex-1 bg-yellow-600 text-white px-4 py-3 rounded-xl hover:bg-yellow-700 transition-all font-medium flex items-center justify-center gap-2"
                     >
-                      <PauseIcon size={16} />
+                      <PauseIcon size={20} />
                       停止
                     </button>
                   )}
                   <button
                     onClick={resetTempoTimer}
-                    className="flex-1 bg-transparent text-gray-400 text-sm font-medium px-4 py-2 rounded-lg border-2 border-gray-600 hover:bg-gray-700 hover:text-white transition-all flex items-center justify-center gap-1"
+                    className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
                   >
-                    <RotateIcon size={16} />
+                    <RotateIcon size={20} />
                     リセット
                   </button>
-                </div>
-
-                <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    インターバル設定（秒）
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    max="10"
-                    value={tempoInterval}
-                    onChange={(e) => setTempoInterval(parseFloat(e.target.value))}
-                    disabled={tempoRunning}
-                    className="w-full px-3 py-2 bg-gray-900 border-2 border-gray-700 rounded-lg text-center text-xl font-bold text-gray-100 focus:border-blue-500 focus:outline-none"
-                  />
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    設定秒数ごとにビープ音が鳴ります
-                  </p>
                 </div>
               </div>
             )}
@@ -674,17 +673,54 @@ export default function Training() {
         )}
       </div>
 
-      {/* 入力フォーム */}
+      {/* ビュー切り替え */}
+      <div className="flex space-x-2 mb-6">
+        <button
+          onClick={() => setView('calendar')}
+          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
+            view === 'calendar'
+              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+          }`}
+        >
+          <CalendarIcon size={18} />
+          カレンダー
+        </button>
+        <button
+          onClick={() => setView('graph')}
+          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
+            view === 'graph'
+              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+          }`}
+        >
+          <BarChartIcon size={18} />
+          グラフ
+        </button>
+        <button
+          onClick={() => setView('list')}
+          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
+            view === 'list'
+              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+          }`}
+        >
+          <ListIcon size={18} />
+          リスト
+        </button>
+      </div>
+
+      {/* フォーム */}
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
           >
-            <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <Card title={editingDatetime ? 'トレーニングを編集' : 'トレーニングを記録'}>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     日付
@@ -849,154 +885,108 @@ export default function Training() {
                 >
                   + 種目を追加
                 </button>
-                
-                <button 
-                  type="submit" 
-                  className="w-full px-6 py-3 bg-transparent text-cyan-400 border-2 border-cyan-400 rounded-xl hover:bg-cyan-400 hover:text-black transition-all font-medium text-lg"
+
+                <button
+                  type="submit"
+                  className="w-full bg-cyan-500 text-black px-6 py-3 rounded-xl hover:bg-cyan-400 transition-all font-bold"
                 >
                   {editingDatetime ? '更新する' : '保存する'}
                 </button>
               </form>
-            </div>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ビュー切り替えタブ */}
-      <div className="flex space-x-2 mb-6">
-        <button
-          onClick={() => setView('calendar')}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
-            view === 'calendar'
-              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
-              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-          }`}
-        >
-          <CalendarIcon size={20} />
-          <span>カレンダー</span>
-        </button>
-        <button
-          onClick={() => setView('graph')}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
-            view === 'graph'
-              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
-              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-          }`}
-        >
-          <BarChartIcon size={20} />
-          <span>グラフ</span>
-        </button>
-        <button
-          onClick={() => setView('list')}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
-            view === 'list'
-              ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400'
-              : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-          }`}
-        >
-          <ListIcon size={20} />
-          <span>リスト</span>
-        </button>
-      </div>
-
       {/* カレンダービュー */}
       {view === 'calendar' && (
         <Card>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex justify-between items-center mb-4">
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-2 hover:bg-slate-700 rounded-lg transition"
+              className="text-gray-400 hover:text-white transition-colors"
             >
-              <ChevronLeftIcon size={24} className="text-gray-400" />
+              <ChevronLeftIcon size={24} />
             </button>
-            <h2 className="text-2xl font-bold text-white">
-              {format(currentMonth, 'yyyy年 M月', { locale: ja })}
-            </h2>
+            <h3 className="text-xl font-bold text-white">
+              {format(currentMonth, 'yyyy年M月', { locale: ja })}
+            </h3>
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-2 hover:bg-slate-700 rounded-lg transition"
+              className="text-gray-400 hover:text-white transition-colors"
             >
-              <ChevronRightIcon size={24} className="text-gray-400" />
+              <ChevronRightIcon size={24} />
             </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {['日', '月', '火', '水', '木', '金', '土'].map(day => (
-              <div key={day} className="text-center text-gray-400 font-semibold p-2">
-                {day}
-              </div>
-            ))}
           </div>
 
           <div className="grid grid-cols-7 gap-2">
+            {['日', '月', '火', '水', '木', '金', '土'].map((day, i) => (
+              <div key={i} className="text-center text-sm font-semibold text-gray-400 py-2">
+                {day}
+              </div>
+            ))}
+            
             {Array.from({ length: paddingDays }).map((_, i) => (
               <div key={`padding-${i}`} className="aspect-square" />
             ))}
-
-            {monthDays.map(day => {
+            
+            {monthDays.map((day, i) => {
               const workouts = getWorkoutsForDate(day)
-              const isToday = isSameDay(day, new Date())
               const hasWorkout = workouts.length > 0
-
+              const isToday = isSameDay(day, new Date())
+              
               return (
-                <motion.div
-                  key={day.toISOString()}
+                <motion.button
+                  key={i}
                   whileHover={{ scale: 1.05 }}
-                  onClick={() => handleDateClick(day)}
-                  className={`min-h-[80px] p-2 rounded-xl cursor-pointer transition-all border-2 ${
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setSelectedDate(day)
+                  }}
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all ${
                     isToday
-                      ? 'border-cyan-500 bg-cyan-500/10'
+                      ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
                       : hasWorkout
-                      ? 'border-green-500/50 bg-green-500/10'
-                      : 'border-slate-700 bg-slate-800 hover:bg-slate-700'
+                      ? 'bg-blue-600/30 text-white font-semibold hover:bg-blue-600/50'
+                      : 'bg-slate-700/30 text-gray-400 hover:bg-slate-700/50'
                   }`}
                 >
-                  <div className="text-sm font-semibold text-white mb-1">
-                    {format(day, 'd')}
-                  </div>
+                  <div>{format(day, 'd')}</div>
                   {hasWorkout && (
-                    <div className="space-y-1">
-                      {workouts.slice(0, 2).map((workout, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs bg-green-600/20 text-green-400 px-1 py-0.5 rounded truncate"
-                          title={workout.exercise}
-                        >
-                          {workout.exercise.slice(0, 6)}
-                        </div>
+                    <div className="flex space-x-0.5 mt-1">
+                      {workouts.map((_, idx) => (
+                        <div key={idx} className="w-1 h-1 bg-cyan-400 rounded-full" />
                       ))}
-                      {workouts.length > 2 && (
-                        <div className="text-xs text-gray-400">
-                          +{workouts.length - 2}
-                        </div>
-                      )}
                     </div>
                   )}
-                </motion.div>
+                </motion.button>
               )
             })}
           </div>
+        </Card>
+      )}
 
-          {selectedDate && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-700"
+      {/* 選択された日のワークアウト詳細 */}
+      {selectedDate && view === 'calendar' && (
+        <Card title={`${format(selectedDate, 'M月d日')}のトレーニング`}>
+          <div className="space-y-4">
+            <button
+              onClick={() => handleDateClick(selectedDate)}
+              className="w-full bg-transparent text-cyan-400 px-6 py-3 rounded-xl border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all font-bold"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">
-                  {format(selectedDate, 'M月d日(E)', { locale: ja })} のトレーニング
-                </h3>
-                <button
-                  onClick={() => setSelectedDate(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
+              + この日にトレーニングを追加
+            </button>
 
-              {getWorkoutsForDate(selectedDate).map((workout, idx) => (
-                <div key={idx} className="mb-4 p-3 bg-slate-800 rounded-lg">
+            <AnimatePresence>
+              {getWorkoutsForDate(selectedDate).map((workout, index) => (
+                <motion.div
+                  key={workout.datetime || index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-slate-700 p-4 rounded-xl border-2 border-slate-600"
+                >
                   <h4 className="font-bold text-white mb-2">
                     {workout.exercise}
                   </h4>
@@ -1029,14 +1019,14 @@ export default function Training() {
                       削除
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
 
               {getWorkoutsForDate(selectedDate).length === 0 && (
                 <p className="text-gray-400">この日のトレーニングはありません</p>
               )}
-            </motion.div>
-          )}
+            </AnimatePresence>
+          </motion.div>
         </Card>
       )}
 
@@ -1198,47 +1188,63 @@ export default function Training() {
 }
 
 function ExerciseProgressChart({ data, exercise }) {
-  if (!data || data.length === 0) {
-    return <p className="text-gray-400">データがありません</p>
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-400">
+        選択した期間にデータがありません
+      </div>
+    )
   }
 
-  const width = 800
-  const height = 400
-  const margin = { top: 20, right: 60, bottom: 60, left: 60 }
-  const chartWidth = width - margin.left - margin.right
-  const chartHeight = height - margin.top - margin.bottom
+  const margin = { top: 20, right: 60, bottom: 40, left: 60 }
+  const chartWidth = 800
+  const chartHeight = 400
+  const width = chartWidth + margin.left + margin.right
+  const height = chartHeight + margin.top + margin.bottom
 
   const maxWeight = Math.max(...data.map(d => d.maxWeight))
   const maxReps = Math.max(...data.map(d => d.totalReps))
+  
+  const yScaleWeight = (value) => {
+    return chartHeight - (value / maxWeight) * chartHeight + margin.top
+  }
+  
+  const yScaleReps = (value) => {
+    return chartHeight - (value / maxReps) * chartHeight + margin.top
+  }
+  
+  const xScale = (index) => {
+    return (index / (data.length - 1)) * chartWidth + margin.left
+  }
 
-  const xScale = (index) => data.length === 1 ? chartWidth / 2 : (chartWidth / (data.length - 1)) * index
-  const yScaleWeight = (value) => chartHeight - (value / maxWeight) * chartHeight
-  const yScaleReps = (value) => chartHeight - (value / maxReps) * chartHeight
+  const weightLine = data.map((d, i) => 
+    `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleWeight(d.maxWeight)}`
+  ).join(' ')
 
-  const weightLine = data
-    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleWeight(d.maxWeight)}`)
-    .join(' ')
-
-  const repsLine = data
-    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleReps(d.totalReps)}`)
-    .join(' ')
+  const repsLine = data.map((d, i) => 
+    `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleReps(d.totalReps)}`
+  ).join(' ')
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-full h-auto mx-auto" preserveAspectRatio="xMidYMid meet">
-        <g transform={`translate(${margin.left}, ${margin.top})`}>
-          {[0, 0.25, 0.5, 0.75, 1].map(ratio => (
-            <line
-              key={ratio}
-              x1={0}
-              y1={chartHeight * ratio}
-              x2={chartWidth}
-              y2={chartHeight * ratio}
-              stroke="#374151"
-              strokeWidth={1}
-              strokeDasharray="4"
-            />
-          ))}
+      <svg width={width} height={height} className="mx-auto">
+        <g>
+          <line
+            x1={margin.left}
+            y1={margin.top}
+            x2={margin.left}
+            y2={chartHeight + margin.top}
+            stroke="#4b5563"
+            strokeWidth={2}
+          />
+          <line
+            x1={margin.left}
+            y1={chartHeight + margin.top}
+            x2={chartWidth + margin.left}
+            y2={chartHeight + margin.top}
+            stroke="#4b5563"
+            strokeWidth={2}
+          />
 
           <path d={weightLine} fill="none" stroke="#06b6d4" strokeWidth={3} />
           {data.map((d, i) => (
