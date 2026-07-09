@@ -1311,3 +1311,5 @@ function ExerciseProgressChart({ data, exercise }) {
     </div>
   )
 }
+
+
