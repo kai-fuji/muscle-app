@@ -223,7 +223,7 @@ export default function Training() {
           console.log(`[Training Cache] ✓ Cache HIT for ${cacheKey}: ${cachedData.length} records`)
           const formattedData = cachedData.map(item => ({
             ...item,
-            date: item.datetime ? item.datetime.split(' ')[0] : item.date,
+            date: item.datetime ? item.datetime.split('T')[0] : item.date,
             sets: item.sets || []
           }))
           setData(formattedData)
@@ -249,7 +249,7 @@ export default function Training() {
       // データを適切な形式に変換
       const formattedData = json.map(item => ({
         ...item,
-        date: item.datetime ? item.datetime.split(' ')[0] : item.date,
+        date: item.datetime ? item.datetime.split('T')[0] : item.date,
         sets: item.sets || []
       }))
       
