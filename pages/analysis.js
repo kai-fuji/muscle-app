@@ -13,7 +13,7 @@ export default function Analysis() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [period])
 
   const fetchData = async () => {
     try {
