@@ -198,43 +198,43 @@ export default function Training() {
 
   const fetchData = async () => {
     try {
-      // 常に1ヶ月分のデータを取得（グラフでも1ヶ月制限）
-      const endDate = format(new Date(), 'yyyy-MM-dd')
-      const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
+      let url = '/api/training'
       
-      console.log(`[Training] Fetching data for period: ${startDate} to ${endDate}`)
-
-      // Turso APIから直接取得
-      const res = await fetch('/api/training')
-      if (!res.ok) {
-        throw new Error('Failed to fetch training data')
+      if (view === 'calendar') {
+        // カレンダービュー：特定月のデータ
+        const year = format(currentMonth, 'yyyy')
+        const month = format(currentMonth, 'M')
+        url = `/api/training?year=${year}&month=${month}`
+      } else {
+        // グラフ・リストビュー：直近1ヶ月分のみ取得
+        const endDate = format(new Date(), 'yyyy-MM-dd')
+        const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
+        url = `/api/training?startDate=${startDate}&endDate=${endDate}`
       }
       
-      const allData = await res.json()
+      console.log(`[Training] Fetching from: ${url}`)
       
-      // 1ヶ月分にフィルタ
-      const filteredData = allData.filter(item => {
-        const itemDate = new Date(item.datetime || item.date)
-        const start = new Date(startDate)
-        const end = new Date(endDate)
-        return itemDate >= start && itemDate <= end
-      })
-
+      const res = await fetch(url)
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`)
+      }
+      
+      const json = await res.json()
+      
       // データを適切な形式に変換
-      const formattedData = filteredData.map(item => ({
+      const formattedData = json.map(item => ({
         ...item,
         date: item.datetime ? item.datetime.split(' ')[0] : item.date,
         sets: item.sets || []
       }))
-
-      setData(formattedData)
       
+      setData(formattedData)
       console.log(`[Training] Data loaded: ${formattedData.length} records`)
-
+      
       // バックグラウンドでIndexedDBにキャッシュ（エラーが出ても無視）
       try {
-        if (typeof window !== 'undefined') {
-          const { cacheMonthData, getMonthKey, groupDataByMonth } = await import('../lib/cacheManager')
+        if (typeof window !== 'undefined' && formattedData.length > 0) {
+          const { cacheMonthData, groupDataByMonth } = await import('../lib/cacheManager')
           
           // データを月ごとにグループ化
           const grouped = groupDataByMonth(formattedData)
