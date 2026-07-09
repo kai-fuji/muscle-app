@@ -221,7 +221,7 @@ export default function Training() {
         console.log('[Training Cache] Graph/List view - loading all cached months')
         
         try {
-          const { getAllCachedData } = await import('../lib/cacheManager')
+          const { getAllCachedData } = await import('../lib/cacheManager.ts')
           const cachedData = await getAllCachedData('training')
           
           if (cachedData && cachedData.length > 0) {
@@ -247,7 +247,7 @@ export default function Training() {
       
       // キャッシュをチェック
       try {
-        const { getCachedMonthData } = await import('../lib/cacheManager')
+        const { getCachedMonthData } = await import('../lib/cacheManager.ts')
         const cachedData = await getCachedMonthData('training', cacheKey)
         
         if (cachedData && cachedData.length > 0) {
@@ -290,7 +290,7 @@ export default function Training() {
       // バックグラウンドでキャッシュに保存
       if (formattedData.length > 0) {
         try {
-          const { cacheMonthData } = await import('../lib/cacheManager')
+          const { cacheMonthData } = await import('../lib/cacheManager.ts')
           
           if (view === 'calendar') {
             // カレンダービュー：その月のデータのみ保存
