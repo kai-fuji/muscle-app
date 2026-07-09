@@ -267,8 +267,32 @@ export default function Training() {
       if (formattedData.length > 0) {
         try {
           const { cacheMonthData } = await import('../lib/cacheManager')
-          await cacheMonthData('training', cacheKey, formattedData)
-          console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
+          
+          if (view === 'calendar') {
+            // カレンダービュー：その月のデータのみ保存
+            await cacheMonthData('training', cacheKey, formattedData)
+            console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
+          } else {
+            // グラフ・リストビュー：全データを保存し、さらに月ごとにも分割保存
+            await cacheMonthData('training', cacheKey, formattedData)
+            console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
+            
+            // 月ごとにデータを分割してキャッシュ
+            const monthlyData = {}
+            formattedData.forEach(item => {
+              const monthKey = item.date.substring(0, 7) // YYYY-MM
+              if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = []
+              }
+              monthlyData[monthKey].push(item)
+            })
+            
+            // 各月のデータをキャッシュに保存
+            for (const [monthKey, monthData] of Object.entries(monthlyData)) {
+              await cacheMonthData('training', monthKey, monthData)
+              console.log(`[Training Cache] ✓ Saved ${monthData.length} records to monthly cache: ${monthKey}`)
+            }
+          }
         } catch (cacheError) {
           console.log('[Training Cache] Save failed:', cacheError.message)
         }
