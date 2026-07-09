@@ -1026,7 +1026,7 @@ export default function Training() {
                 <p className="text-gray-400">この日のトレーニングはありません</p>
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </Card>
       )}
 
