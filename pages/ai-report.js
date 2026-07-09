@@ -1,6 +1,7 @@
 // pages/ai-report.js
 import { useState, useEffect } from 'react'
 import Card from '../components/Card'
+import { getAllCachedData } from '../lib/cacheManager'
 import { motion } from 'framer-motion'
 import { AIIcon, BodyDataIcon, CaloriesIcon, CheckIcon, ClipboardIcon, DashboardIcon, DataIcon, DownloadIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon } from '../components/Icons'
 
@@ -18,84 +19,96 @@ export default function AIReport() {
   }, [period])
 
   const fetchAllData = async () => {
+  try {
+    setLoading(true)
+    setError(null)
+    
+    // 期間に応じた日数を計算
+    const getDaysFromPeriod = () => {
+      switch (period) {
+        case '1month': return 30
+        case '3months': return 90
+        case '6months': return 180
+        case '1year': return 365
+        default: return null
+      }
+    }
+
+    const days = getDaysFromPeriod()
+    
+    console.log('Fetching with period:', period, 'days:', days)
+    
+    // トレーニングデータ：まずキャッシュをチェック
+    let trainingData = []
     try {
-      setLoading(true)
-      setError(null)
-      
-      // 期間に応じた日数を計算
-      const getDaysFromPeriod = () => {
-        switch (period) {
-          case '1month': return 30
-          case '3months': return 90
-          case '6months': return 180
-          case '1year': return 365
-          default: return null // 'all'の場合はnull
+      console.log('[AI Report] Checking training cache...')
+      const cachedTraining = await getAllCachedData('training')
+      if (cachedTraining && cachedTraining.length > 0) {
+        console.log(`[AI Report] ✓ Loaded ${cachedTraining.length} training records from cache`)
+        trainingData = cachedTraining
+      } else {
+        console.log('[AI Report] No cached training data, fetching from API...')
+        const trainingRes = await fetch('/api/training')
+        if (trainingRes.ok) {
+          trainingData = await trainingRes.json()
         }
       }
-
-      const days = getDaysFromPeriod()
-      
-      // APIリクエストのURLを構築（期間パラメータを追加）
-      const bodyUrl = '/api/body-data'
-      const nutritionUrl = '/api/nutrition'
-      // トレーニングAPIは期間を制限して取得（軽量化）
-      const trainingUrl = days ? `/api/training?days=${days}` : '/api/training'
-      
-      console.log('Fetching with period:', period, 'days:', days)
-      console.log('Training URL:', trainingUrl)
-      
-      const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
-        fetch(bodyUrl),
-        fetch(nutritionUrl),
-        // トレーニングAPIにタイムアウトを設定（15秒）
-        Promise.race([
-          fetch(trainingUrl),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('トレーニングデータの取得がタイムアウトしました')), 15000)
-          )
-        ])
-      ])
-      
-      if (!bodyRes.ok || !nutritionRes.ok || !trainingRes.ok) {
-        throw new Error('データの取得に失敗しました')
+    } catch (cacheError) {
+      console.log('[AI Report] Cache failed, fetching from API:', cacheError)
+      const trainingRes = await fetch('/api/training')
+      if (trainingRes.ok) {
+        trainingData = await trainingRes.json()
       }
-      
-      const bodyData = await bodyRes.json()
-      const nutritionData = await nutritionRes.json()
-      const trainingData = await trainingRes.json()
-
-      console.log('Fetched data:', { bodyData, nutritionData, trainingData })
-
-      // クライアント側でも期間フィルタリングを適用（念のため）
-      const filterByDate = (data) => {
-        if (!days) return data
-        const cutoffDate = new Date()
-        cutoffDate.setDate(cutoffDate.getDate() - days)
-        return data.filter(d => new Date(d.date) >= cutoffDate)
-      }
-
-      const data = {
-        body_data: Array.isArray(bodyData) ? filterByDate(bodyData) : [],
-        nutrition_data: Array.isArray(nutritionData) ? filterByDate(nutritionData) : [],
-        training_data: Array.isArray(trainingData) ? filterByDate(trainingData) : []
-      }
-
-      console.log('Processed and filtered data:', data)
-      console.log('Data counts:', {
-        body: data.body_data.length,
-        nutrition: data.nutrition_data.length,
-        training: data.training_data.length
-      })
-      
-      setAllData(data)
-      generatePrompt(data)
-      setLoading(false)
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setError(error.message)
-      setLoading(false)
     }
+    
+    // 身体データと栄養データは従来通りAPIから取得
+    const [bodyRes, nutritionRes] = await Promise.all([
+      fetch('/api/body-data'),
+      fetch('/api/nutrition')
+    ])
+    
+    if (!bodyRes.ok || !nutritionRes.ok) {
+      throw new Error('データの取得に失敗しました')
+    }
+    
+    const bodyData = await bodyRes.json()
+    const nutritionData = await nutritionRes.json()
+
+    console.log('Fetched data:', { bodyData, nutritionData, trainingData })
+
+    // 期間フィルタリング
+    const filterByDate = (data, dateField = 'date') => {
+      if (!days) return data
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - days)
+      return data.filter(d => {
+        const itemDate = d.datetime ? new Date(d.datetime) : new Date(d[dateField])
+        return itemDate >= cutoffDate
+      })
+    }
+
+    const data = {
+      body_data: Array.isArray(bodyData) ? filterByDate(bodyData) : [],
+      nutrition_data: Array.isArray(nutritionData) ? filterByDate(nutritionData) : [],
+      training_data: Array.isArray(trainingData) ? filterByDate(trainingData, 'datetime') : []
+    }
+
+    console.log('Processed and filtered data:', data)
+    console.log('Data counts:', {
+      body: data.body_data.length,
+      nutrition: data.nutrition_data.length,
+      training: data.training_data.length
+    })
+    
+    setAllData(data)
+    generatePrompt(data)
+    setLoading(false)
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    setError(error.message)
+    setLoading(false)
   }
+}
 
   const generatePrompt = (data) => {
     const periodLabel = {
