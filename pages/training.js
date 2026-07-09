@@ -43,7 +43,7 @@ export default function Training() {
   const audioContextRef = useRef(null)
   const wakeLockRef = useRef(null)
 
-  // 初回ロードと月変更時
+  // 初回ロードのみ
   useEffect(() => {
     fetchData()
     fetchExercises()
@@ -59,14 +59,21 @@ export default function Training() {
         audioContextRef.current = null
       }
     }
-  }, [currentMonth])
+  }, [])
 
-  // ビュー切り替えまたは期間変更時にデータ再取得
+  // カレンダービューの月変更時のみデータ再取得
+  useEffect(() => {
+    if (view === 'calendar') {
+      fetchData()
+    }
+  }, [currentMonth, view])
+
+  // グラフ・リストビューに切り替えた時のみデータ再取得
   useEffect(() => {
     if (view === 'graph' || view === 'list') {
       fetchData()
     }
-  }, [view, graphPeriod])
+  }, [view])
 
   useEffect(() => {
     if (!intervalRunning || timerMode !== 'interval') return
