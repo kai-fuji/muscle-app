@@ -26,7 +26,7 @@ export default function Training() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [view, setView] = useState('calendar')
   const [selectedExercise, setSelectedExercise] = useState(null)
-  const [graphPeriod, setGraphPeriod] = useState('1month') // デフォルトを1か月に変更
+  const [graphPeriod, setGraphPeriod] = useState('1month')
 
   const [timerWidgetExpanded, setTimerWidgetExpanded] = useState(false)
   const [timerMode, setTimerMode] = useState('interval')
@@ -198,42 +198,30 @@ export default function Training() {
 
   const fetchData = async () => {
     try {
-      let startDate, endDate
-      
-      if (view === 'calendar') {
-        // カレンダービュー：現在表示中の月のデータのみ
-        startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
-        endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-      } else {
-        // グラフ・リストビュー：期間に応じたデータ
-        endDate = format(new Date(), 'yyyy-MM-dd')
-        
-        if (graphPeriod === '1month') {
-          startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
-        } else if (graphPeriod === '3months') {
-          startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd')
-        } else if (graphPeriod === '6months') {
-          startDate = format(subDays(new Date(), 180), 'yyyy-MM-dd')
-        } else {
-          // 'all' の場合は1年分
-          startDate = format(subDays(new Date(), 365), 'yyyy-MM-dd')
-        }
-      }
+      // 常に1ヶ月分のデータを取得（グラフでも1ヶ月制限）
+      const endDate = format(new Date(), 'yyyy-MM-dd')
+      const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd')
       
       console.log(`[Training] Fetching data for period: ${startDate} to ${endDate}`)
 
-      // IndexedDBからデータ取得（キャッシュ優先、不足分はTursoから自動取得）
-      const { getDataForPeriod } = await import('../lib/syncService')
+      // Turso APIから直接取得
+      const res = await fetch('/api/training')
+      if (!res.ok) {
+        throw new Error('Failed to fetch training data')
+      }
       
-      const trainingData = await getDataForPeriod(
-        'training',
-        startDate,
-        endDate,
-        true // autoSync: 最新月を自動同期
-      )
+      const allData = await res.json()
+      
+      // 1ヶ月分にフィルタ
+      const filteredData = allData.filter(item => {
+        const itemDate = new Date(item.datetime || item.date)
+        const start = new Date(startDate)
+        const end = new Date(endDate)
+        return itemDate >= start && itemDate <= end
+      })
 
       // データを適切な形式に変換
-      const formattedData = trainingData.map(item => ({
+      const formattedData = filteredData.map(item => ({
         ...item,
         date: item.datetime ? item.datetime.split(' ')[0] : item.date,
         sets: item.sets || []
@@ -242,6 +230,24 @@ export default function Training() {
       setData(formattedData)
       
       console.log(`[Training] Data loaded: ${formattedData.length} records`)
+
+      // バックグラウンドでIndexedDBにキャッシュ（エラーが出ても無視）
+      try {
+        if (typeof window !== 'undefined') {
+          const { cacheMonthData, getMonthKey, groupDataByMonth } = await import('../lib/cacheManager')
+          
+          // データを月ごとにグループ化
+          const grouped = groupDataByMonth(formattedData)
+          
+          // 各月をキャッシュに保存
+          for (const [month, monthData] of grouped.entries()) {
+            await cacheMonthData('training', month, monthData)
+            console.log(`[Training] Cached ${monthData.length} records for ${month}`)
+          }
+        }
+      } catch (cacheError) {
+        console.log('[Training] Cache save skipped:', cacheError.message)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
     }
@@ -443,9 +449,6 @@ export default function Training() {
 
   const getExerciseHistory = (exerciseName) => {
     let filteredData = data.filter(item => item.exercise === exerciseName)
-    
-    // データは既にfetchDataで期間フィルタリング済みなので、
-    // ここでは追加のフィルタリングは不要
     
     return filteredData
       .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -1036,48 +1039,8 @@ export default function Training() {
           <Card>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-white">種目を選択</h3>
-              
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setGraphPeriod('1month')}
-                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === '1month'
-                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-                  }`}
-                >
-                  1ヶ月
-                </button>
-                <button
-                  onClick={() => setGraphPeriod('3months')}
-                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === '3months'
-                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-                  }`}
-                >
-                  3ヶ月
-                </button>
-                <button
-                  onClick={() => setGraphPeriod('6months')}
-                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === '6months'
-                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-                  }`}
-                >
-                  6ヶ月
-                </button>
-                <button
-                  onClick={() => setGraphPeriod('all')}
-                  className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                    graphPeriod === 'all'
-                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-                  }`}
-                >
-                  全期間
-                </button>
+              <div className="text-sm text-gray-400">
+                ※ 直近1ヶ月のデータを表示
               </div>
             </div>
             
@@ -1112,6 +1075,9 @@ export default function Training() {
       {/* リストビュー */}
       {view === 'list' && (
         <Card title="トレーニング履歴">
+          <div className="mb-4 text-sm text-gray-400">
+            ※ 直近1ヶ月のデータを表示
+          </div>
           <div className="space-y-4">
             {sortedData.map((entry, index) => (
               <motion.div
