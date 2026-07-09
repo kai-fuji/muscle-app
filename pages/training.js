@@ -198,35 +198,53 @@ export default function Training() {
 
   const fetchData = async () => {
     try {
+      let cacheKey = ''
       let url = '/api/training'
       
-      console.log(`[Training] Current view: ${view}`)
-      console.log(`[Training] Current month: ${format(currentMonth, 'yyyy-MM')}`)
-      
       if (view === 'calendar') {
-        // カレンダービュー：特定月のデータ
+        // カレンダービュー：月単位でキャッシュ
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
+        cacheKey = `${year}-${month.padStart(2, '0')}`
         url = `/api/training?year=${year}&month=${month}`
-        console.log(`[Training] Fetching calendar data for ${year}-${month}`)
+        console.log(`[Training Cache] Calendar view - checking cache for ${cacheKey}`)
       } else {
-        // グラフ・リストビュー：全データ取得
-        console.log('[Training] Fetching all data for graph/list view')
+        // グラフ・リストビュー：全データをキャッシュ
+        cacheKey = 'allData'
+        console.log('[Training Cache] Graph/List view - checking cache for allData')
       }
       
-      console.log(`[Training] API URL: ${url}`)
+      // キャッシュをチェック
+      try {
+        const { getCachedMonthData } = await import('../lib/cacheManager')
+        const cachedData = await getCachedMonthData('training', cacheKey)
+        
+        if (cachedData && cachedData.length > 0) {
+          console.log(`[Training Cache] ✓ Cache HIT for ${cacheKey}: ${cachedData.length} records`)
+          const formattedData = cachedData.map(item => ({
+            ...item,
+            date: item.datetime ? item.datetime.split(' ')[0] : item.date,
+            sets: item.sets || []
+          }))
+          setData(formattedData)
+          console.log(`[Training Cache] Data loaded from cache`)
+          return
+        }
+        
+        console.log(`[Training Cache] ✗ Cache MISS for ${cacheKey}`)
+      } catch (cacheError) {
+        console.log('[Training Cache] Cache check failed:', cacheError.message)
+      }
       
+      // キャッシュにない場合、APIから取得
+      console.log(`[Training API] Fetching from ${url}`)
       const res = await fetch(url)
       if (!res.ok) {
-        console.error(`[Training] API error: ${res.status} ${res.statusText}`)
         throw new Error(`API error: ${res.status}`)
       }
       
       const json = await res.json()
-      console.log(`[Training] Raw data from API: ${json.length} records`)
-      if (json.length > 0) {
-        console.log(`[Training] First record:`, json[0])
-      }
+      console.log(`[Training API] Fetched ${json.length} records`)
       
       // データを適切な形式に変換
       const formattedData = json.map(item => ({
@@ -235,13 +253,19 @@ export default function Training() {
         sets: item.sets || []
       }))
       
-      console.log(`[Training] Formatted data: ${formattedData.length} records`)
-      if (formattedData.length > 0) {
-        console.log(`[Training] First formatted record:`, formattedData[0])
-      }
-      
       setData(formattedData)
-      console.log(`[Training] Data successfully set to state`)
+      console.log(`[Training] Data set to state`)
+      
+      // バックグラウンドでキャッシュに保存
+      if (formattedData.length > 0) {
+        try {
+          const { cacheMonthData } = await import('../lib/cacheManager')
+          await cacheMonthData('training', cacheKey, formattedData)
+          console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
+        } catch (cacheError) {
+          console.log('[Training Cache] Save failed:', cacheError.message)
+        }
+      }
     } catch (error) {
       console.error('[Training] Error fetching data:', error)
     }
