@@ -1004,42 +1004,64 @@ export default function Training() {
             {Array.from({ length: paddingDays }).map((_, i) => (
               <div key={`padding-${i}`} className="aspect-square" />
             ))}
-            
+
+
             {monthDays.map((day, i) => {
               const workouts = getWorkoutsForDate(day)
               const hasWorkout = workouts.length > 0
               const isToday = isSameDay(day, new Date())
               
               return (
-                <motion.button
+                <motion.div
                   key={i}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setSelectedDate(day)
-                  }}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all ${
-                    isToday
-                      ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
-                      : hasWorkout
-                      ? 'bg-blue-600/30 text-white font-semibold hover:bg-blue-600/50'
-                      : 'bg-slate-700/30 text-gray-400 hover:bg-slate-700/50'
-                  }`}
+                  className="relative group aspect-square"
                 >
-                  <div>{format(day, 'd')}</div>
-                  {hasWorkout && (
-                    <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
-                      {workouts.map((workout, idx) => (
-                        <div 
-                          key={idx} 
-                          className="w-5 h-5 border border-cyan-400 rounded flex items-center justify-center text-[10px] text-cyan-400 font-bold"
-                        >
-                          {workout.exercise.charAt(0)}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setSelectedDate(day)
+                    }}
+                    className={`w-full h-full rounded-xl flex flex-col items-center justify-center text-sm transition-all ${
+                      isToday
+                        ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
+                        : hasWorkout
+                        ? 'bg-blue-600/30 text-white font-semibold hover:bg-blue-600/50'
+                        : 'bg-slate-700/30 text-gray-400 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <div>{format(day, 'd')}</div>
+                    {hasWorkout && (
+                      <div className="flex mt-1 justify-center">
+                        <div className="w-5 h-5 border border-cyan-400 rounded flex items-center justify-center text-[10px] text-cyan-400 font-bold">
+                          {workouts[0].exercise.charAt(0)}
                         </div>
-                      ))}
+                      </div>
+                    )}
+                  </motion.button>
+                  
+                  {/* ホバー時のツールチップ */}
+                  {hasWorkout && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      <div className="bg-gray-900 border-2 border-cyan-500 rounded-lg p-3 shadow-xl min-w-[180px]">
+                        <div className="text-xs text-cyan-400 font-bold mb-2">
+                          {format(day, 'M月d日')}
+                        </div>
+                        <div className="space-y-1">
+                          {workouts.map((workout, idx) => (
+                            <div key={idx} className="text-xs text-white">
+                              • {workout.exercise}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* 吹き出しの三角形 */}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-[2px]">
+                        <div className="border-8 border-transparent border-t-cyan-500"></div>
+                      </div>
                     </div>
                   )}
-                </motion.button>
+                </motion.div>
               )
             })}
           </div>
@@ -1158,14 +1180,10 @@ export default function Training() {
 
           {selectedExercise && (
             <Card title={`${selectedExercise} の進捗`}>
-              <div className="overflow-x-auto -mx-4 px-4">
-                <div className="min-w-[600px]">
-                  <ExerciseProgressChart
-                    data={getExerciseHistory(selectedExercise)}
-                    exercise={selectedExercise}
-                  />
-                </div>
-              </div>
+              <ExerciseProgressChart
+                data={getExerciseHistory(selectedExercise)}
+                exercise={selectedExercise}
+              />
             </Card>
           )}
         </div>
@@ -1292,7 +1310,13 @@ function ExerciseProgressChart({ data, exercise }) {
 
   return (
     <div className="overflow-x-auto">
-      <svg width={width} height={height} className="mx-auto">
+      <svg 
+        width="100%" 
+        height="400" 
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="max-w-full"
+      >
         <g>
           <line
             x1={margin.left}
