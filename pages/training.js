@@ -357,7 +357,7 @@ export default function Training() {
           method: editingDatetime ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            datetime: datetime,
+            datetime: editingDatetime || datetime,
             exercise: exerciseData.exercise,
             sets: exerciseData.sets.map(s => ({
               weight: parseFloat(s.weight),
