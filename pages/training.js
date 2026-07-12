@@ -1158,10 +1158,14 @@ export default function Training() {
 
           {selectedExercise && (
             <Card title={`${selectedExercise} の進捗`}>
-              <ExerciseProgressChart
-                data={getExerciseHistory(selectedExercise)}
-                exercise={selectedExercise}
-              />
+              <div className="overflow-x-auto -mx-4 px-4">
+                <div className="min-w-[600px]">
+                  <ExerciseProgressChart
+                    data={getExerciseHistory(selectedExercise)}
+                    exercise={selectedExercise}
+                  />
+                </div>
+              </div>
             </Card>
           )}
         </div>
