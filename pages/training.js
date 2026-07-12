@@ -1028,9 +1028,14 @@ export default function Training() {
                 >
                   <div>{format(day, 'd')}</div>
                   {hasWorkout && (
-                    <div className="flex space-x-0.5 mt-1">
-                      {workouts.map((_, idx) => (
-                        <div key={idx} className="w-1 h-1 bg-cyan-400 rounded-full" />
+                    <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
+                      {workouts.map((workout, idx) => (
+                        <div 
+                          key={idx} 
+                          className="w-5 h-5 border border-cyan-400 rounded flex items-center justify-center text-[10px] text-cyan-400 font-bold"
+                        >
+                          {workout.exercise.charAt(0)}
+                        </div>
                       ))}
                     </div>
                   )}
