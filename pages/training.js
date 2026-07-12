@@ -357,6 +357,7 @@ export default function Training() {
           method: editingDatetime ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            date: formData.date,
             datetime: editingDatetime || datetime,
             exercise: exerciseData.exercise,
             sets: exerciseData.sets.map(s => ({
