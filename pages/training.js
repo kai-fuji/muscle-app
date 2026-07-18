@@ -269,10 +269,6 @@ export default function Training() {
       } else {
         console.log('[Training Cache] Force refresh - skipping cache')
       }
-
-      } catch (cacheError) {
-        console.log('[Training Cache] Cache check failed:', cacheError.message)
-      }
       
       // キャッシュにない場合、APIから取得
       console.log(`[Training API] Fetching from ${url}`)
