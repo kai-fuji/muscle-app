@@ -204,12 +204,13 @@ export default function Training() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const fetchData = async () => {
+  const fetchData = async (forceRefresh = false) => {
     try {
       let cacheKey = ''
       let url = '/api/training'
       
       if (view === 'calendar') {
+
         // カレンダービュー：月単位でキャッシュ
         const year = format(currentMonth, 'yyyy')
         const month = format(currentMonth, 'M')
@@ -244,24 +245,31 @@ export default function Training() {
         cacheKey = 'allData'
         console.log('[Training Cache] Falling back to API')
       }
-      
-      // キャッシュをチェック
-      try {
-        const cachedData = await getCachedMonthData('training', cacheKey)
-        
-        if (cachedData && cachedData.length > 0) {
-          console.log(`[Training Cache] ✓ Cache HIT for ${cacheKey}: ${cachedData.length} records`)
-          const formattedData = cachedData.map(item => ({
-            ...item,
-            date: item.datetime ? item.datetime.split('T')[0] : item.date,
-            sets: item.sets || []
-          }))
-          setData(formattedData)
-          console.log(`[Training Cache] Data loaded from cache`)
-          return
+
+      if (!forceRefresh) {
+        try {
+          const cachedData = await getCachedMonthData('training', cacheKey)
+          
+          if (cachedData && cachedData.length > 0) {
+            console.log(`[Training Cache] ✓ Cache HIT for ${cacheKey}: ${cachedData.length} records`)
+            const formattedData = cachedData.map(item => ({
+              ...item,
+              date: item.datetime ? item.datetime.split('T')[0] : item.date,
+              sets: item.sets || []
+            }))
+            setData(formattedData)
+            console.log(`[Training Cache] Data loaded from cache`)
+            return
+          }
+          
+          console.log(`[Training Cache] ✗ Cache MISS for ${cacheKey}`)
+        } catch (cacheError) {
+          console.log('[Training Cache] Cache check failed:', cacheError.message)
         }
-        
-        console.log(`[Training Cache] ✗ Cache MISS for ${cacheKey}`)
+      } else {
+        console.log('[Training Cache] Force refresh - skipping cache')
+      }
+
       } catch (cacheError) {
         console.log('[Training Cache] Cache check failed:', cacheError.message)
       }
@@ -388,7 +396,7 @@ export default function Training() {
           previousHistory: null
         }]
       })
-      fetchData()
+      fetchData(true)
     } catch (error) {
       console.error('Error saving data:', error)
       alert('保存中にエラーが発生しました')

@@ -161,7 +161,10 @@ export default function AIReport() {
       filteredData.body_data = data.body_data.map(item => {
         const filtered = { date: item.date }
         if (dataSelection.weight) filtered.weight = item.weight
-        if (dataSelection.bodyFat) filtered.body_fat = item.body_fat
+        if (dataSelection.bodyFat) {
+          // body_fat と bodyFat の両方をチェック
+          filtered.body_fat = item.body_fat || item.bodyFat
+        }
         return filtered
       })
     }
