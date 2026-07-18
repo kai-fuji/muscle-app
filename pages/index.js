@@ -49,25 +49,32 @@ export default function Dashboard() {
       setTodayData(todayJson)
 
       // 過去30日間のデータを取得（月間表示用）
+      console.log('📊 Fetching body/nutrition/training data...')
       const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
         fetch('/api/body-data'),
         fetch('/api/nutrition'),
         fetch('/api/training')
       ])
 
+      console.log('📊 Response status:', {
+        body: bodyRes.status,
+        nutrition: nutritionRes.status,
+        training: trainingRes.status
+      })
+
       const bodyJson = await bodyRes.json()
       const nutritionJson = await nutritionRes.json()
       const trainingJson = await trainingRes.json()
 
-      console.log('📊 Body data:', bodyJson.length, 'rows')
-      console.log('📊 Nutrition data:', nutritionJson.length, 'rows')
-      console.log('📊 Training data:', trainingJson.length, 'rows')
+      console.log('📊 Body data:', bodyJson.length, 'rows', bodyJson.slice(0, 2))
+      console.log('📊 Nutrition data:', nutritionJson.length, 'rows', nutritionJson.slice(0, 2))
+      console.log('📊 Training data:', trainingJson.length, 'rows', trainingJson.slice(0, 2))
 
       setBodyData(bodyJson)
       setNutritionData(nutritionJson)
       setTrainingData(trainingJson)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('❌ Error fetching data:', error)
     }
   }
 
@@ -85,10 +92,16 @@ export default function Dashboard() {
       ? startOfWeek(now, { weekStartsOn: 0 })
       : startOfMonth(now)
     
-    return data.filter(d => {
+    console.log('🔍 Filter cutoff:', format(cutoffDate, 'yyyy-MM-dd'), 'Field:', dateField, 'Data count:', data.length)
+    
+    const filtered = data.filter(d => {
       const itemDate = new Date(d[dateField])
       return itemDate >= cutoffDate
     })
+    
+    console.log('🔍 Filtered result:', filtered.length, 'items')
+    
+    return filtered
   }
 
   // 週間・月間サマリーの計算
@@ -96,6 +109,12 @@ export default function Dashboard() {
     const filteredBody = getFilteredData(bodyData)
     const filteredNutrition = getFilteredData(nutritionData)
     const filteredTraining = getFilteredData(trainingData, 'date')
+
+    console.log('📈 Summary calculation:', {
+      bodyCount: filteredBody.length,
+      nutritionCount: filteredNutrition.length,
+      trainingCount: filteredTraining.length
+    })
 
     // データを日付でソート（古い順）
     const sortedBody = [...filteredBody].sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -128,6 +147,13 @@ export default function Dashboard() {
 
     // トレーニング頻度（ユニークな日数）
     const uniqueTrainingDates = [...new Set(filteredTraining.map(t => t.date))].length
+
+    console.log('📈 Summary result:', {
+      weightChange,
+      bodyFatChange,
+      avgCalories,
+      trainingFrequency: uniqueTrainingDates
+    })
 
     return {
       weightChange,
