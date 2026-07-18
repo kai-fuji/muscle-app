@@ -40,9 +40,12 @@ export default function Dashboard() {
 
   const fetchAllData = async () => {
     try {
+      console.log('📊 Fetching dashboard data...')
+      
       // 今日のデータ
       const todayRes = await fetch('/api/dashboard')
       const todayJson = await todayRes.json()
+      console.log('📊 Today data:', todayJson)
       setTodayData(todayJson)
 
       // 過去30日間のデータを取得（月間表示用）
@@ -55,6 +58,10 @@ export default function Dashboard() {
       const bodyJson = await bodyRes.json()
       const nutritionJson = await nutritionRes.json()
       const trainingJson = await trainingRes.json()
+
+      console.log('📊 Body data:', bodyJson.length, 'rows')
+      console.log('📊 Nutrition data:', nutritionJson.length, 'rows')
+      console.log('📊 Training data:', trainingJson.length, 'rows')
 
       setBodyData(bodyJson)
       setNutritionData(nutritionJson)
@@ -90,14 +97,19 @@ export default function Dashboard() {
     const filteredNutrition = getFilteredData(nutritionData)
     const filteredTraining = getFilteredData(trainingData, 'date')
 
-    // 体重変化
-    const weightChange = filteredBody.length >= 2
-      ? (filteredBody[0].weight - filteredBody[filteredBody.length - 1].weight).toFixed(1)
+    // データを日付でソート（古い順）
+    const sortedBody = [...filteredBody].sort((a, b) => new Date(a.date) - new Date(b.date))
+
+    // 体重変化（最新 - 最古）
+    const weightChange = sortedBody.length >= 2
+      ? (sortedBody[sortedBody.length - 1].weight - sortedBody[0].weight).toFixed(1)
       : 0
 
-    // 体脂肪率変化
-    const bodyFatChange = filteredBody.length >= 2
-      ? (filteredBody[0].body_fat_percentage - filteredBody[filteredBody.length - 1].body_fat_percentage)?.toFixed(1) || 0
+    // 体脂肪率変化（最新 - 最古）
+    const latestBodyFat = sortedBody[sortedBody.length - 1]?.body_fat_percentage || sortedBody[sortedBody.length - 1]?.body_fat || 0
+    const oldestBodyFat = sortedBody[0]?.body_fat_percentage || sortedBody[0]?.body_fat || 0
+    const bodyFatChange = sortedBody.length >= 2
+      ? (latestBodyFat - oldestBodyFat).toFixed(1)
       : 0
 
     // 日別カロリーを集計
@@ -172,7 +184,7 @@ export default function Dashboard() {
     const sorted = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date))
     const labels = sorted.map(d => format(new Date(d.date), 'M/d'))
     const weights = sorted.map(d => d.weight)
-    const bodyFats = sorted.map(d => d.body_fat_percentage || null)
+    const bodyFats = sorted.map(d => d.body_fat_percentage || d.body_fat || null)
 
     const weightsMA = calculateMovingAverage(weights, period === 'week' ? 3 : 7)
     const bodyFatsMA = calculateMovingAverage(bodyFats, period === 'week' ? 3 : 7)
