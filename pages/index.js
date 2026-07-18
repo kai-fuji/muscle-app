@@ -23,9 +23,9 @@ export default function Dashboard() {
   const [bodyData, setBodyData] = useState([])
   const [nutritionData, setNutritionData] = useState([])
   const [trainingData, setTrainingData] = useState([])
-  const [calorieGoal, setCalorieGoal] = useState(2000)
+  const [calorieGoal, setCalorieGoal] = useState(2100)
   const [showGoalModal, setShowGoalModal] = useState(false)
-  const [tempGoal, setTempGoal] = useState(2000)
+  const [tempGoal, setTempGoal] = useState(2100)
 
   useEffect(() => {
     // localStorageからカロリー目標を読み込み
@@ -685,72 +685,6 @@ export default function Dashboard() {
               本日のトレーニングはまだありません
             </div>
           )}
-        </div>
-      </div>
-
-      {/* SUMMARY カード */}
-      <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-          Today's Summary
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 本日のカロリー摂取 */}
-          <div className="bg-gray-800 rounded-xl p-3 border border-gray-700">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#FF453A20', color: '#FF453A' }}>
-                <CaloriesIcon size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-gray-400">Today's Calories</div>
-                <div className="text-2xl font-bold text-white">{currentData.calories.current}</div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">kcal consumed</div>
-          </div>
-
-          {/* 本日のタンパク質 */}
-          <div className="bg-gray-800 rounded-xl p-3 border border-gray-700">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#00D9FF20', color: '#00D9FF' }}>
-                <ProteinIcon size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-gray-400">Today's Protein</div>
-                <div className="text-2xl font-bold text-white">{currentData.protein.current}g</div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">{todayProteinRate}% of goal</div>
-          </div>
-
-          {/* 本日のトレーニング */}
-          <div className="bg-gray-800 rounded-xl p-3 border border-gray-700">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#5E5CE620', color: '#5E5CE6' }}>
-                <DumbbellIcon size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-gray-400">Today's Sets</div>
-                <div className="text-2xl font-bold text-white">{currentData.todayTotalSets}</div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">total sets</div>
-          </div>
-
-          {/* 目標達成率 */}
-          <div className="bg-gray-800 rounded-xl p-3 border border-gray-700">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#32D74B20', color: '#32D74B' }}>
-                <TrendIcon size={20} />
-              </div>
-              <div>
-                <div className="text-sm text-gray-400">Goal Progress</div>
-                <div className="text-2xl font-bold text-white">
-                  {todayCaloriesRate}%
-                </div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">of daily goal</div>
-          </div>
         </div>
       </div>
     </div>
