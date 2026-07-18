@@ -18,7 +18,7 @@ import {
 } from '../components/Icons'
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState('week') // 'week' or 'month'
+  const [period, setPeriod] = useState('month') // 'week' or 'month'
   const [todayData, setTodayData] = useState(null)
   const [bodyData, setBodyData] = useState([])
   const [nutritionData, setNutritionData] = useState([])
@@ -95,50 +95,23 @@ export default function Dashboard() {
     setShowGoalModal(false)
   }
 
-  // 期間フィルター
-  const getFilteredData = (data, dateField = 'date') => {
-    if (!data || data.length === 0) {
-      console.log('🔍 No data to filter')
-      return []
-    }
-
-    const now = new Date()
-    console.log('🔍 Current date:', format(now, 'yyyy-MM-dd'))
-    
-    let cutoffDate
-    if (period === 'week') {
-      cutoffDate = startOfWeek(now, { weekStartsOn: 0 })
-    } else {
-      cutoffDate = startOfMonth(now)
-    }
-    
-    console.log('🔍 Filter cutoff:', format(cutoffDate, 'yyyy-MM-dd'), 'Field:', dateField, 'Data count:', data.length)
-    console.log('🔍 First data item:', data[0])
-    
-    const filtered = data.filter(d => {
-      if (!d || !d[dateField]) {
-        console.log('🔍 Invalid data item:', d)
-        return false
-      }
-      const itemDate = new Date(d[dateField])
-      const pass = itemDate >= cutoffDate
-      if (!pass) {
-        console.log('🔍 Filtered out:', d[dateField], 'is before', format(cutoffDate, 'yyyy-MM-dd'))
-      }
-      return pass
-    })
-    
-    console.log('🔍 Filtered result:', filtered.length, 'items')
-    
-    return filtered
+  // 期間フィルター（他のページと同じシンプルな実装）
+  const getFilteredData = (data, days) => {
+    if (!data || data.length === 0) return []
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    return data.filter(d => new Date(d.date) >= cutoffDate)
   }
+
+  // 週間・月間のフィルタ日数
+  const filterDays = period === 'week' ? 7 : 30
+
+  const filteredBody = getFilteredData(bodyData, filterDays)
+  const filteredNutrition = getFilteredData(nutritionData, filterDays)
+  const filteredTraining = getFilteredData(trainingData, filterDays)
 
   // 週間・月間サマリーの計算
   const calculateSummary = () => {
-    const filteredBody = getFilteredData(bodyData)
-    const filteredNutrition = getFilteredData(nutritionData)
-    const filteredTraining = getFilteredData(trainingData, 'date')
-
     console.log('📈 Summary calculation:', {
       bodyCount: filteredBody.length,
       nutritionCount: filteredNutrition.length,
@@ -176,13 +149,6 @@ export default function Dashboard() {
 
     // トレーニング頻度（ユニークな日数）
     const uniqueTrainingDates = [...new Set(filteredTraining.map(t => t.date))].length
-
-    console.log('📈 Summary result:', {
-      weightChange,
-      bodyFatChange,
-      avgCalories,
-      trainingFrequency: uniqueTrainingDates
-    })
 
     return {
       weightChange,
@@ -233,10 +199,11 @@ export default function Dashboard() {
 
   // グラフデータの準備（体重＋体脂肪率）
   const prepareWeightBodyFatChart = () => {
-    const filtered = getFilteredData(bodyData)
-    if (filtered.length === 0) return { labels: [], datasets: [] }
+    if (filteredBody.length === 0) {
+      return { labels: [], datasets: [] }
+    }
 
-    const sorted = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date))
+    const sorted = [...filteredBody].sort((a, b) => new Date(a.date) - new Date(b.date))
     const labels = sorted.map(d => format(new Date(d.date), 'M/d'))
     const weights = sorted.map(d => d.weight)
     const bodyFats = sorted.map(d => d.body_fat_percentage || d.body_fat || null)
@@ -261,6 +228,7 @@ export default function Dashboard() {
           pointBorderColor: '#000',
           pointBorderWidth: 2,
           yAxisID: 'y',
+          spanGaps: true,
         },
         {
           label: '体重移動平均',
@@ -273,6 +241,7 @@ export default function Dashboard() {
           pointRadius: 0,
           borderDash: [5, 5],
           yAxisID: 'y',
+          spanGaps: true,
         },
         {
           label: '体脂肪率',
@@ -309,12 +278,13 @@ export default function Dashboard() {
 
   // グラフデータの準備（カロリー推移）
   const prepareCaloriesChart = () => {
-    const filtered = getFilteredData(nutritionData)
-    if (filtered.length === 0) return { labels: [], datasets: [] }
+    if (filteredNutrition.length === 0) {
+      return { labels: [], datasets: [] }
+    }
 
     // 日別カロリーを集計
     const caloriesByDate = {}
-    filtered.forEach(n => {
+    filteredNutrition.forEach(n => {
       if (!caloriesByDate[n.date]) {
         caloriesByDate[n.date] = 0
       }
@@ -562,9 +532,8 @@ export default function Dashboard() {
         <div className="h-64">
           {weightBodyFatChart.labels.length > 0 ? (
             <Chart
-              data={weightBodyFatChart.datasets}
+              datasets={weightBodyFatChart.datasets}
               labels={weightBodyFatChart.labels}
-              title=""
               multiAxis={true}
             />
           ) : (
@@ -586,9 +555,8 @@ export default function Dashboard() {
         <div className="h-64">
           {caloriesChart.labels.length > 0 ? (
             <Chart
-              data={caloriesChart.datasets}
+              datasets={caloriesChart.datasets}
               labels={caloriesChart.labels}
-              title=""
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
