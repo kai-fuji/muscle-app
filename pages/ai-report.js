@@ -155,20 +155,20 @@ export default function AIReport() {
 
     // データをフィルタリング
     const filteredData = {}
-    
+
     // 身体データのフィルタリング
     if (dataSelection.weight || dataSelection.bodyFat) {
       filteredData.body_data = data.body_data.map(item => {
         const filtered = { date: item.date }
         if (dataSelection.weight) filtered.weight = item.weight
         if (dataSelection.bodyFat) {
-          // body_fat と bodyFat の両方をチェック
-          filtered.body_fat = item.body_fat || item.bodyFat
+          // APIは body_fat_percentage として返す
+          filtered.body_fat_percentage = item.body_fat_percentage
         }
         return filtered
       })
     }
-    
+   
     // 栄養データのフィルタリング
     if (dataSelection.calories || dataSelection.protein || dataSelection.fat || dataSelection.carbs) {
       filteredData.nutrition_data = data.nutrition_data.map(item => {
