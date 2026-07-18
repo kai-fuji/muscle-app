@@ -1,12 +1,12 @@
-// components/Chart.js - Dark Theme Version
-// 既存のレイアウトを維持しながら、色味だけをダークテーマに変更
-import { Line } from 'react-chartjs-2'
+// components/Chart.js - Dark Theme Version with Multi-Axis Support
+import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -18,13 +18,22 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
   Filler
 )
 
-export default function Chart({ data, labels, title, color = '#00D9FF', datasets = null }) { // datasetsオプションを追加
+export default function Chart({ 
+  data, 
+  labels, 
+  title, 
+  color = '#00D9FF', 
+  datasets = null,
+  multiAxis = false,
+  chartType = 'line' // 'line' or 'mixed'
+}) {
   // datasetsが指定されている場合はそれを使用、なければ従来通りの単一データセット
   const chartData = datasets ? {
     labels,
@@ -36,17 +45,85 @@ export default function Chart({ data, labels, title, color = '#00D9FF', datasets
         label: title,
         data,
         borderColor: color,
-        backgroundColor: `${color}30`, // 半透明の背景
+        backgroundColor: `${color}30`,
         borderWidth: 3,
         tension: 0.4,
         fill: true,
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: color,
-        pointBorderColor: '#000', // ダークテーマ: ポイントボーダーを黒に
+        pointBorderColor: '#000',
         pointBorderWidth: 2,
       },
     ],
+  }
+
+  // 2軸グラフの設定
+  const scalesConfig = multiAxis ? {
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        color: '#8E8E93',
+        font: {
+          size: 12,
+        },
+      },
+    },
+    y: {
+      type: 'linear',
+      display: true,
+      position: 'left',
+      grid: {
+        color: '#2C2C2E',
+        borderDash: [5, 5],
+      },
+      ticks: {
+        color: '#8E8E93',
+        font: {
+          size: 12,
+        },
+      },
+    },
+    y1: {
+      type: 'linear',
+      display: true,
+      position: 'right',
+      grid: {
+        drawOnChartArea: false,
+      },
+      ticks: {
+        color: '#8E8E93',
+        font: {
+          size: 12,
+        },
+      },
+    },
+  } : {
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        color: '#8E8E93',
+        font: {
+          size: 12,
+        },
+      },
+    },
+    y: {
+      grid: {
+        color: '#2C2C2E',
+        borderDash: [5, 5],
+      },
+      ticks: {
+        color: '#8E8E93',
+        font: {
+          size: 12,
+        },
+      },
+    },
   }
 
   const options = {
@@ -54,7 +131,7 @@ export default function Chart({ data, labels, title, color = '#00D9FF', datasets
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: datasets ? true : false, // 複数データセットの場合は凡例を表示
+        display: datasets ? true : false,
         labels: {
           color: '#FFFFFF',
           font: {
@@ -62,10 +139,14 @@ export default function Chart({ data, labels, title, color = '#00D9FF', datasets
           },
           padding: 15,
           usePointStyle: true,
+          filter: function(item, chart) {
+            // 移動平均線は凡例に表示しない（オプション）
+            return !item.text.includes('移動平均');
+          }
         },
       },
       tooltip: {
-        backgroundColor: 'rgba(28, 28, 30, 0.95)', // ダークテーマ: ツールチップ背景
+        backgroundColor: 'rgba(28, 28, 30, 0.95)',
         titleColor: '#FFFFFF',
         bodyColor: '#FFFFFF',
         padding: 12,
@@ -81,39 +162,24 @@ export default function Chart({ data, labels, title, color = '#00D9FF', datasets
         borderWidth: 1,
       },
     },
-    scales: {
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: '#8E8E93', // ダークテーマ: グレーのテキスト
-          font: {
-            size: 12,
-          },
-        },
-      },
-      y: {
-        grid: {
-          color: '#2C2C2E', // ダークテーマ: ダークグレーのグリッド
-          borderDash: [5, 5],
-        },
-        ticks: {
-          color: '#8E8E93', // ダークテーマ: グレーのテキスト
-          font: {
-            size: 12,
-          },
-        },
-      },
-    },
+    scales: scalesConfig,
     interaction: {
       intersect: false,
       mode: 'index',
     },
   }
 
+  // Mixed chart (line + bar)の場合
+  if (chartType === 'mixed' && datasets) {
+    return (
+      <div className="w-full h-full">
+        <Line data={chartData} options={options} />
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full h-64">
+    <div className="w-full h-full">
       <Line data={chartData} options={options} />
     </div>
   )
