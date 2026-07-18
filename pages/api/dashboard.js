@@ -53,11 +53,11 @@ export default async function handler(req, res) {
     })
     const weightData = weightResult.rows
 
-    // 最新の体重・体脂肪
+    // 最新の体重・体脂肪率
     const latestBodyResult = await db.execute(
       'SELECT * FROM body_data ORDER BY date DESC LIMIT 1'
     )
-    const latestBody = latestBodyResult.rows[0] || { weight: 0, body_fat: 0 }
+    const latestBody = latestBodyResult.rows[0] || { weight: 0, body_fat_percentage: 0 }
 
     res.status(200).json({
       calories: { current: Math.round(totalCalories), goal: 2000 },
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       training: { current: trainingCount, max: 7 },
       totalSets: { current: todayTotalSets, max: 60 },
       weight: { current: latestBody.weight, change: '+0.0', goal: 70 },
-      bodyFat: { current: latestBody.body_fat, change: '+0.0' },
+      bodyFat: { current: latestBody.body_fat_percentage || latestBody.body_fat || 0, change: '+0.0' },
       todayTraining: todayTraining,
       todayTotalSets: todayTotalSets,
       topExercises: topExercises,
