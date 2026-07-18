@@ -49,11 +49,12 @@ export default function Dashboard() {
       setTodayData(todayJson)
 
       // 過去30日間のデータを取得（月間表示用）
-      console.log('📊 Fetching body/nutrition/training data...')
+      // training APIには days パラメータを渡す
+      console.log('📊 Fetching body/nutrition/training data (last 30 days)...')
       const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
         fetch('/api/body-data'),
         fetch('/api/nutrition'),
-        fetch('/api/training')
+        fetch('/api/training?days=30') // 期間を指定
       ])
 
       console.log('📊 Response status:', {
@@ -66,15 +67,24 @@ export default function Dashboard() {
       const nutritionJson = await nutritionRes.json()
       const trainingJson = await trainingRes.json()
 
-      console.log('📊 Body data:', bodyJson.length, 'rows', bodyJson.slice(0, 2))
-      console.log('📊 Nutrition data:', nutritionJson.length, 'rows', nutritionJson.slice(0, 2))
-      console.log('📊 Training data:', trainingJson.length, 'rows', trainingJson.slice(0, 2))
+      console.log('📊 Body data:', bodyJson.length, 'rows')
+      console.log('📊 Nutrition data:', nutritionJson.length, 'rows')
+      console.log('📊 Training data:', trainingJson.length, 'rows')
 
-      setBodyData(bodyJson)
-      setNutritionData(nutritionJson)
+      // 過去30日に絞り込み（body-data と nutrition は全件取得なのでフロント側でフィルタ）
+      const cutoffDate = subDays(new Date(), 30)
+      const filteredBody = bodyJson.filter(d => new Date(d.date) >= cutoffDate)
+      const filteredNutrition = nutritionJson.filter(d => new Date(d.date) >= cutoffDate)
+
+      console.log('📊 Filtered Body data:', filteredBody.length, 'rows')
+      console.log('📊 Filtered Nutrition data:', filteredNutrition.length, 'rows')
+
+      setBodyData(filteredBody)
+      setNutritionData(filteredNutrition)
       setTrainingData(trainingJson)
     } catch (error) {
       console.error('❌ Error fetching data:', error)
+      console.error('❌ Error stack:', error.stack)
     }
   }
 
@@ -87,16 +97,35 @@ export default function Dashboard() {
 
   // 期間フィルター
   const getFilteredData = (data, dateField = 'date') => {
+    if (!data || data.length === 0) {
+      console.log('🔍 No data to filter')
+      return []
+    }
+
     const now = new Date()
-    const cutoffDate = period === 'week' 
-      ? startOfWeek(now, { weekStartsOn: 0 })
-      : startOfMonth(now)
+    console.log('🔍 Current date:', format(now, 'yyyy-MM-dd'))
+    
+    let cutoffDate
+    if (period === 'week') {
+      cutoffDate = startOfWeek(now, { weekStartsOn: 0 })
+    } else {
+      cutoffDate = startOfMonth(now)
+    }
     
     console.log('🔍 Filter cutoff:', format(cutoffDate, 'yyyy-MM-dd'), 'Field:', dateField, 'Data count:', data.length)
+    console.log('🔍 First data item:', data[0])
     
     const filtered = data.filter(d => {
+      if (!d || !d[dateField]) {
+        console.log('🔍 Invalid data item:', d)
+        return false
+      }
       const itemDate = new Date(d[dateField])
-      return itemDate >= cutoffDate
+      const pass = itemDate >= cutoffDate
+      if (!pass) {
+        console.log('🔍 Filtered out:', d[dateField], 'is before', format(cutoffDate, 'yyyy-MM-dd'))
+      }
+      return pass
     })
     
     console.log('🔍 Filtered result:', filtered.length, 'items')
