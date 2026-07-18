@@ -308,7 +308,6 @@ export default function Dashboard() {
           backgroundColor: '#5E5CE6',
           borderColor: '#5E5CE6',
           borderWidth: 2,
-          type: 'bar',
         },
         {
           label: '移動平均',
@@ -320,7 +319,6 @@ export default function Dashboard() {
           fill: false,
           pointRadius: 0,
           borderDash: [5, 5],
-          type: 'line',
         },
         {
           label: '目標',
@@ -331,7 +329,6 @@ export default function Dashboard() {
           fill: false,
           pointRadius: 0,
           borderDash: [10, 5],
-          type: 'line',
         },
       ]
     }
