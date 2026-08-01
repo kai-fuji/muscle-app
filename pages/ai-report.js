@@ -138,12 +138,12 @@ export default function AIReport() {
   }
 }
 
-  // データ選択が変わったらプロンプトを再生成
+  // データ選択またはプロンプトタイプが変わったらプロンプトを再生成
   useEffect(() => {
     if (allData) {
       generatePrompt(allData)
     }
-  }, [dataSelection, allData])
+  }, [dataSelection, allData, promptType])
 
   const generatePrompt = (data) => {
     const periodLabel = {
@@ -189,7 +189,11 @@ export default function AIReport() {
       )
     }
 
-    const promptText = `# 筋肥大データ分析依頼（${periodLabel}のデータ）
+    let promptText = ''
+
+    if (promptType === 'lean-bulk') {
+      // リーンバルク評価用プロンプト
+      promptText = `# 筋肥大データ分析依頼（${periodLabel}のデータ）
 
 以下のデータを分析して、リーンバルク（脂肪を極力抑えた筋肥大）の観点から評価とアドバイスをお願いします。
 
@@ -225,6 +229,50 @@ ${JSON.stringify(filteredData, null, 2)}
 ---
 
 上記データを分析して、詳細なレポートをお願いします。`
+    } else if (promptType === 'weight-progress') {
+      // 体重と体脂肪率の経過評価用プロンプト
+      promptText = `# 体重・体脂肪率の経過分析（${periodLabel}のデータ）
+
+以下のデータを分析して、体重と体脂肪率の経過を評価してください。
+
+## 分析依頼内容
+
+1. **体重の推移**
+   - 期間全体での体重の変化量
+   - 体重変化のトレンド（増加/減少/維持）
+   - 変化のペース（週あたりの平均変化量）
+
+2. **体脂肪率の推移**
+   - 期間全体での体脂肪率の変化
+   - 体脂肪率の変化トレンド
+
+3. **除脂肪体重（筋肉量）の推定**
+   - 除脂肪体重の変化
+   - 体重変化の内訳（筋肉 vs 脂肪）
+
+4. **総合評価**
+   - 身体組成の変化の質
+   - トレンドから見た今後の予測
+
+---
+
+## データ（${periodLabel}）
+
+\`\`\`json
+${JSON.stringify(filteredData, null, 2)}
+\`\`\`
+
+---
+
+上記データから、体重と体脂肪率の経過を詳しく分析してください。`
+    } else if (promptType === 'data-only') {
+      // データのみ表示用プロンプト
+      promptText = `# データ（${periodLabel}）
+
+\`\`\`json
+${JSON.stringify(filteredData, null, 2)}
+\`\`\``
+    }
 
     console.log('Generated prompt length:', promptText.length)
     setPrompt(promptText)
@@ -310,10 +358,10 @@ ${JSON.stringify(filteredData, null, 2)}
         <h3 className="text-sm font-medium text-gray-300 mb-2">分析タイプ</h3>
         <div className="flex flex-wrap gap-2">
           {[
-            { value: 'lean-bulk', label: 'リーンバルク評価', icon: '💪' },
-            { value: 'weight-progress', label: '体重・体脂肪率の経過', icon: '📊' },
-            { value: 'data-only', label: 'データのみ', icon: '📋' }
-          ].map(({ value, label, icon }) => (
+            { value: 'lean-bulk', label: 'リーンバルク評価' },
+            { value: 'weight-progress', label: '体重・体脂肪率の経過' },
+            { value: 'data-only', label: 'データのみ' }
+          ].map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setPromptType(value)}
@@ -323,7 +371,7 @@ ${JSON.stringify(filteredData, null, 2)}
                   : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
               }`}
             >
-              <span className="mr-1">{icon}</span>{label}
+              {label}
             </button>
           ))}
         </div>
