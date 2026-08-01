@@ -26,6 +26,7 @@ export default function Layout({ children }) {
     { path: '/body-data', icon: <BodyDataIcon size={20} />, label: '身体データ' },
     { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栄養' },
     { path: '/training', icon: <TrainingIcon size={20} />, label: 'トレーニング' },
+    { path: '/training-summary', icon: <WorkoutIcon size={20} />, label: 'SNS投稿' },
     { path: '/analysis', icon: <TrendIcon size={20} />, label: '分析' },
     { path: '/ai-report', icon: <WorkoutIcon size={20} />, label: 'AI解析' },
     { path: '/exercise-master', icon: <DumbbellIcon size={20} />, label: '種目マスター' },
