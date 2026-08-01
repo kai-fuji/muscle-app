@@ -230,11 +230,11 @@ export default function TrainingSummary() {
         </div>
         
         {/* 右上の画像 */}
-        <div className="absolute right-0 top-0" style={{ width: '180px', maxWidth: '45%' }}>
+        <div className="absolute right-0 top-0" style={{ width: '180px', maxWidth: '45%', height: '220px' }}>
           <img 
             src="/picture/man.png" 
             alt="Fitness" 
-            className="w-full h-auto"
+            className="w-full h-full object-contain object-top"
             style={{ filter: 'brightness(0.4) contrast(1.1)', display: 'block' }}
           />
         </div>
