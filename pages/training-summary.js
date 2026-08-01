@@ -139,15 +139,10 @@ export default function TrainingSummary() {
           </h1>
         </div>
         <div className="w-48 h-48 overflow-hidden rounded-lg bg-gray-800">
-          {/* 画像は実際の運用時にpublicフォルダに配置してください */}
           <img 
-            src="/man.png" 
+            src="/components/picture/man.png" 
             alt="Fitness" 
             className="w-full h-full object-cover grayscale"
-            onError={(e) => {
-              // 画像が読み込めない場合のフォールバック
-              e.target.style.display = 'none'
-            }}
           />
         </div>
       </div>
