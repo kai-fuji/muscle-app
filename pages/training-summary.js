@@ -216,7 +216,7 @@ export default function TrainingSummary() {
     <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%' }}>
       {/* ヘッダー */}
-      <div className="relative mb-0" style={{ height: '200px' }}>
+      <div className="relative mb-0" style={{ minHeight: '180px' }}>
         {/* 左側のヘッダーテキスト */}
         <div className="absolute left-0 top-0 z-10 p-6 pt-3">
           <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
@@ -227,13 +227,13 @@ export default function TrainingSummary() {
           </h1>
         </div>
         
-        {/* 右側の背景画像 */}
-        <div className="absolute right-0 top-0 overflow-hidden" style={{ width: '55%', height: '200px' }}>
+        {/* 右上の画像 */}
+        <div className="absolute right-0 top-0" style={{ width: '240px', height: 'auto' }}>
           <img 
             src="/picture/man.png" 
             alt="Fitness" 
-            className="w-full h-full object-cover"
-            style={{ filter: 'brightness(0.4) contrast(1.1)', objectPosition: 'center 20%' }}
+            className="w-full h-auto"
+            style={{ filter: 'brightness(0.4) contrast(1.1)' }}
           />
         </div>
       </div>
@@ -287,30 +287,26 @@ export default function TrainingSummary() {
 
                 {/* 右側: 前回比 */}
                 <div className="flex-shrink-0" style={{ width: '70px' }}>
-                  <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide text-right" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
+                  <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
                   {diff.reps > 0 ? (
-                    <div className="flex flex-col items-end">
-                      <div className="relative inline-block">
-                        <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
-                        <svg className="absolute" style={{ width: '12px', height: '12px', top: '-2px', right: '-14px' }} fill="none" stroke="#22C55E" strokeWidth="3" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
-                        </svg>
-                      </div>
+                    <div className="flex flex-col items-center">
+                      <svg className="w-5 h-5 mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                      </svg>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
                       <div className="text-[9px] text-gray-600 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : diff.reps < 0 ? (
-                    <div className="flex flex-col items-end">
-                      <div className="relative inline-block">
-                        <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
-                        <svg className="absolute" style={{ width: '12px', height: '12px', top: '-2px', right: '-14px' }} fill="none" stroke="#EF4444" strokeWidth="3" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
-                        </svg>
-                      </div>
+                    <div className="flex flex-col items-center">
+                      <svg className="w-5 h-5 mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
+                      </svg>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
                       <div className="text-[9px] text-gray-600 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-end">
-                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
+                    <div className="flex flex-col items-center">
+                      <div className="text-2xl font-black leading-none mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
                       <div className="text-[9px] text-gray-600 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   )}
