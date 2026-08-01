@@ -218,7 +218,7 @@ export default function TrainingSummary() {
     <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%', minWidth: '320px' }}>
       {/* ヘッダー */}
-      <div className="relative mb-0" style={{ minHeight: '160px', overflow: 'visible' }}>
+      <div className="relative mb-0" style={{ height: '220px', overflow: 'hidden' }}>
         {/* 左側のヘッダーテキスト */}
         <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
           <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
