@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { getAllCachedData } from '../lib/cacheManager'
 
 export default function TrainingSummary() {
   const [todayData, setTodayData] = useState([])
@@ -15,12 +16,53 @@ export default function TrainingSummary() {
   const fetchTodayTraining = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/training')
-      const allData = await res.json()
+      console.log('[Training Summary] Loading data...')
+      
+      let allData = []
+      
+      // まずキャッシュから取得を試みる
+      try {
+        const cachedData = await getAllCachedData('training')
+        
+        if (cachedData && cachedData.length > 0) {
+          console.log(`[Training Summary] ✓ Loaded ${cachedData.length} records from cache`)
+          allData = cachedData.map(item => ({
+            ...item,
+            date: item.datetime ? item.datetime.split('T')[0] : item.date,
+            sets: item.sets || []
+          }))
+        } else {
+          console.log('[Training Summary] No cached data, fetching from API...')
+          const res = await fetch('/api/training')
+          if (!res.ok) {
+            throw new Error(`API error: ${res.status}`)
+          }
+          const json = await res.json()
+          allData = json.map(item => ({
+            ...item,
+            date: item.datetime ? item.datetime.split('T')[0] : item.date,
+            sets: item.sets || []
+          }))
+        }
+      } catch (cacheError) {
+        console.log('[Training Summary] Cache failed, fetching from API:', cacheError)
+        const res = await fetch('/api/training')
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`)
+        }
+        const json = await res.json()
+        allData = json.map(item => ({
+          ...item,
+          date: item.datetime ? item.datetime.split('T')[0] : item.date,
+          sets: item.sets || []
+        }))
+      }
       
       // 本日のデータを抽出
       const today = format(new Date(), 'yyyy-MM-dd')
       const todayTraining = allData.filter(item => item.date === today)
+      
+      console.log(`[Training Summary] Today's data count: ${todayTraining.length}`)
       
       // 種目ごとにグループ化
       const groupedData = {}
@@ -46,8 +88,9 @@ export default function TrainingSummary() {
       
       setPreviousData(prevData)
       setLoading(false)
+      console.log('[Training Summary] Data loaded successfully')
     } catch (error) {
-      console.error('Error fetching training data:', error)
+      console.error('[Training Summary] Error fetching training data:', error)
       setLoading(false)
     }
   }
