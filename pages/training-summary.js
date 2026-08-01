@@ -95,21 +95,23 @@ export default function TrainingSummary() {
     }
   }
 
-  const getExerciseIcon = (exerciseName) => {
-    // 種目名から部位を判定してアイコンを返す
+  const getExercisePart = (exerciseName) => {
+    // 種目名から部位を判定して返す
     const name = exerciseName.toLowerCase()
-    if (name.includes('プレス') || name.includes('press')) {
-      return '🏋️‍♂️' // 胸
-    } else if (name.includes('フライ') || name.includes('fly')) {
-      return '🦅' // 胸
-    } else if (name.includes('エクステンション') || name.includes('extension')) {
-      return '💪' // 腕
-    } else if (name.includes('カール') || name.includes('curl')) {
-      return '💪' // 腕
-    } else if (name.includes('レイズ') || name.includes('raise')) {
-      return '🦾' // 肩
+    if (name.includes('プレス') || name.includes('フライ') || name.includes('ベンチ')) {
+      return '胸'
+    } else if (name.includes('レイズ') || name.includes('ショルダー')) {
+      return '肩'
+    } else if (name.includes('カール') || name.includes('エクステンション')) {
+      return '腕'
+    } else if (name.includes('アブ') || name.includes('ヒップ') || name.includes('上体')) {
+      return '腹筋'
+    } else if (name.includes('スクワット') || name.includes('レッグ') || name.includes('カーフ')) {
+      return '脚'
+    } else if (name.includes('ラット') || name.includes('ロウ') || name.includes('デッド')) {
+      return '背中'
     }
-    return '🏋️'
+    return ''
   }
 
   const getExerciseNameInEnglish = (exerciseName) => {
@@ -247,15 +249,19 @@ export default function TrainingSummary() {
             <div key={index} className="border-t border-gray-800 py-3 sm:py-4">
               <div className="flex items-start gap-2 sm:gap-4">
                 {/* 左側: 種目情報 */}
-                <div className="flex-shrink-0" style={{ width: '90px', minWidth: '90px' }}>
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ fontFamily: "'Inter', sans-serif", color: '#00D9FF' }}>
-                    {String(index + 1).padStart(2, '0')}
+                <div className="flex-shrink-0" style={{ width: '130px', minWidth: '130px' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-[10px] font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif", color: '#00D9FF' }}>
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] font-medium" style={{ fontFamily: "'Noto Sans JP', sans-serif", color: '#9CA3AF' }}>
+                      {getExercisePart(item.exercise)}
+                    </div>
                   </div>
                   <h3 className="text-xs sm:text-sm font-black uppercase leading-tight mb-1" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.03em', fontWeight: 900 }}>
                     {getExerciseNameInEnglish(item.exercise)}
                   </h3>
-                  <p className="text-[10px] text-gray-600 mb-2" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400 }}>{item.exercise}</p>
-                  <div className="text-3xl sm:text-4xl mt-1">{getExerciseIcon(item.exercise)}</div>
+                  <p className="text-[10px] text-gray-600" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400 }}>{item.exercise}</p>
                 </div>
 
                 {/* 中央: セット情報 */}
