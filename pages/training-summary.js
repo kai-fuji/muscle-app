@@ -170,65 +170,90 @@ export default function TrainingSummary() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8" style={{ maxWidth: '456px', margin: '0 auto' }}>
+    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '480px', margin: '0 auto' }}>
       {/* ヘッダー */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <div className="text-sm text-gray-400 mb-2">
-            {format(new Date(), 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
-          </div>
-          <h1 className="text-5xl font-bold leading-tight">
-            TODAY'S<br />MENU
-          </h1>
-        </div>
-        <div className="w-48 h-48 overflow-hidden rounded-lg bg-gray-800">
+      <div className="relative h-64 mb-6">
+        {/* 背景画像 */}
+        <div className="absolute inset-0 overflow-hidden">
           <img 
             src="/components/picture/man.png" 
             alt="Fitness" 
-            className="w-full h-full object-cover grayscale"
+            className="w-full h-full object-cover object-top"
+            style={{ filter: 'brightness(0.4)' }}
           />
+        </div>
+        
+        {/* ヘッダーテキスト */}
+        <div className="relative z-10 p-6">
+          <div className="text-xs text-gray-400 mb-2 tracking-wider">
+            {format(new Date(), 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
+          </div>
+          <h1 className="text-5xl font-black leading-tight tracking-tight">
+            TODAY'S<br />MENU
+          </h1>
         </div>
       </div>
 
       {/* トレーニングリスト */}
-      <div className="space-y-6">
+      <div className="px-4">
         {todayData.map((item, index) => {
           const diff = calculateDifference(item.exercise, item.sets)
           
           return (
-            <div key={index} className="border-t border-gray-800 pt-6">
-              {/* 種目ヘッダー */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start">
-                  <div className="text-cyan-400 text-2xl font-bold mr-4">
+            <div key={index} className="border-t border-gray-800 py-6">
+              <div className="flex items-start">
+                {/* 左側：種目情報 */}
+                <div className="flex-shrink-0" style={{ width: '140px' }}>
+                  <div className="text-xs text-cyan-500 font-bold mb-1">
                     {String(index + 1).padStart(2, '0')}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold uppercase">{item.exercise}</h3>
-                    <p className="text-sm text-gray-500">{item.exercise}</p>
-                    <div className="mt-2 text-4xl">{getExerciseIcon(item.exercise)}</div>
-                  </div>
+                  <h3 className="text-sm font-black uppercase leading-tight mb-1">
+                    {item.exercise}
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-3">{item.exercise}</p>
+                  <div className="text-4xl">{getExerciseIcon(item.exercise)}</div>
                 </div>
-                <div className="text-right">
-                  {getDiffIndicator(diff.reps)}
-                  <div className="text-xs text-gray-500 mt-1">REPS</div>
-                </div>
-              </div>
 
-              {/* セット情報 */}
-              <div className="grid grid-cols-3 gap-4">
-                {item.sets.map((set, setIndex) => (
-                  <div key={setIndex} className="text-center">
-                    <div className="text-xs text-gray-500 mb-2">SET {setIndex + 1}</div>
-                    <div className="text-3xl font-bold text-cyan-400">{set.weight}</div>
-                    <div className="text-xs text-gray-400">KG</div>
-                    <div className="text-2xl font-bold mt-2">{set.reps}</div>
-                    <div className="text-xs text-gray-400">REPS</div>
-                    <div className="text-xs text-gray-600 mt-2">
-                      Tempo {set.negative || 3}s / RIR {set.rir || 1}
+                {/* 中央：セット情報 */}
+                <div className="flex-1 flex gap-4">
+                  {item.sets.map((set, setIndex) => (
+                    <div key={setIndex} className="flex-1">
+                      <div className="text-xs text-gray-600 mb-2 font-bold">SET {setIndex + 1}</div>
+                      <div className="text-3xl font-black text-cyan-400 leading-none">
+                        {set.weight}
+                        <span className="text-xs text-gray-500 ml-1">kg</span>
+                      </div>
+                      <div className="text-xl font-black mt-1 leading-none">
+                        {set.reps}
+                        <span className="text-xs text-gray-500 ml-1">REPS</span>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-2">
+                        Tempo {set.negative || 3}s / RIR {set.rir || 1}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* 右側：前回比 */}
+                <div className="flex-shrink-0 text-right ml-4">
+                  <div className="text-xs text-gray-600 mb-1">前回比</div>
+                  {diff.reps > 0 ? (
+                    <>
+                      <div className="text-2xl text-green-400 font-black">+{diff.reps}</div>
+                      <div className="text-xs text-gray-500">REPS</div>
+                    </>
+                  ) : diff.reps < 0 ? (
+                    <>
+                      <div className="text-2xl text-red-400 font-black">{diff.reps}</div>
+                      <div className="text-xs text-gray-500">REPS</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl text-gray-600 font-black">±0</div>
+                      <div className="text-xs text-gray-500">REPS</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -236,8 +261,10 @@ export default function TrainingSummary() {
       </div>
 
       {/* フッター */}
-      <div className="mt-12 pt-6 border-t border-gray-800 text-center text-gray-600 text-sm">
-        Generated by Training Tracker
+      <div className="mt-12 pb-6 text-center">
+        <div className="text-xs text-gray-700">
+          Generated by Training Tracker
+        </div>
       </div>
     </div>
   )
