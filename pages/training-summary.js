@@ -170,102 +170,97 @@ export default function TrainingSummary() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '520px', margin: '0 auto' }}>
+    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '540px', margin: '0 auto' }}>
       {/* ヘッダー */}
-      <div className="relative h-72 mb-2">
-        {/* 背景画像 */}
-        <div className="absolute inset-0 overflow-hidden">
+      <div className="relative h-64 mb-0" style={{ background: 'linear-gradient(to right, #000 0%, #000 45%, transparent 45%)' }}>
+        {/* 右側の背景画像 */}
+        <div className="absolute right-0 top-0 w-3/5 h-full overflow-hidden">
           <img 
-            src="/components/picture/man.png" 
+            src="/picture/man.png" 
             alt="Fitness" 
             className="w-full h-full object-cover object-center"
-            style={{ filter: 'brightness(0.3) grayscale(0.2)' }}
+            style={{ filter: 'brightness(0.5) contrast(1.1)' }}
           />
         </div>
         
-        {/* ヘッダーテキスト */}
-        <div className="relative z-10 p-6 pt-4">
-          <div className="text-[10px] text-gray-500 mb-3 tracking-[0.2em] font-medium">
+        {/* 左側のヘッダーテキスト */}
+        <div className="relative z-10 p-6 pt-3">
+          <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
             {format(new Date(), 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
           </div>
-          <h1 className="text-7xl leading-[0.85] tracking-tight" style={{ fontFamily: "'Bebas Neue', sans-serif", fontWeight: 400 }}>
+          <h1 className="text-[80px] leading-[0.8] tracking-[-0.02em]" style={{ fontFamily: "'Bebas Neue', sans-serif", fontWeight: 400 }}>
             TODAY'S<br />MENU
           </h1>
         </div>
       </div>
 
       {/* トレーニングリスト */}
-      <div className="px-5">
+      <div className="px-4">
         {todayData.map((item, index) => {
           const diff = calculateDifference(item.exercise, item.sets)
           
           return (
-            <div key={index} className="border-t border-gray-800 py-5">
-              {/* 種目ヘッダー */}
-              <div className="flex items-start mb-4">
-                <div className="flex-shrink-0">
-                  <div className="text-xs text-cyan-500 font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <div key={index} className="border-t border-gray-800 py-4">
+              <div className="flex items-start gap-4">
+                {/* 左側: 種目情報 */}
+                <div className="flex-shrink-0" style={{ width: '150px' }}>
+                  <div className="text-[11px] font-bold tracking-wider mb-1" style={{ fontFamily: "'Inter', sans-serif", color: '#00D9FF' }}>
                     {String(index + 1).padStart(2, '0')}
                   </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-base font-black uppercase leading-tight tracking-wide" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.05em' }}>
+                  <h3 className="text-sm font-black uppercase leading-tight mb-1" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.03em', fontWeight: 900 }}>
                     {item.exercise}
                   </h3>
-                  <p className="text-xs text-gray-600 mt-0.5" style={{ fontFamily: "'Noto Sans JP', sans-serif" }}>{item.exercise}</p>
+                  <p className="text-[11px] text-gray-600 mb-3" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400 }}>{item.exercise}</p>
+                  <div className="text-5xl mt-2">{getExerciseIcon(item.exercise)}</div>
                 </div>
-                <div className="flex-shrink-0 ml-3">
-                  <div className="text-3xl">{getExerciseIcon(item.exercise)}</div>
-                </div>
-              </div>
 
-              {/* セット情報と前回比 */}
-              <div className="flex items-start">
-                {/* セット情報 */}
-                <div className="flex gap-5 flex-1">
+                {/* 中央: セット情報 */}
+                <div className="flex gap-3 flex-1">
                   {item.sets.map((set, setIndex) => (
                     <div key={setIndex} className="flex-1">
-                      <div className="text-[10px] text-gray-600 mb-2 font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
                         SET {setIndex + 1}
                       </div>
-                      <div className="text-4xl font-black text-cyan-400 leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>
+                      <div className="text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#00D9FF' }}>
                         {set.weight}
-                        <span className="text-xs text-gray-600 ml-1 font-normal">kg</span>
+                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400 }}>kg</span>
                       </div>
-                      <div className="text-2xl font-black mt-1.5 leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>
+                      <div className="text-xl font-black leading-none mb-1" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>
                         {set.reps}
-                        <span className="text-xs text-gray-600 ml-1 font-normal">REPS</span>
+                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400 }}>REPS</span>
                       </div>
-                      <div className="text-[10px] text-gray-700 mt-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <div className="text-[9px] text-gray-700" style={{ fontFamily: "'Inter', sans-serif" }}>
                         Tempo {set.negative || 3}s / RIR {set.rir || 1}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* 前回比 */}
-                <div className="flex-shrink-0 text-right ml-5">
-                  <div className="text-[10px] text-gray-600 mb-2 font-medium tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
-                  <div className="flex items-center justify-end">
-                    {diff.reps > 0 ? (
-                      <>
-                        <svg className="w-5 h-5 text-green-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                        <div className="text-2xl text-green-400 font-black" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>+{diff.reps}</div>
-                      </>
-                    ) : diff.reps < 0 ? (
-                      <>
-                        <svg className="w-5 h-5 text-red-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                        <div className="text-2xl text-red-400 font-black" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>{diff.reps}</div>
-                      </>
-                    ) : (
-                      <div className="text-2xl text-gray-700 font-black" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>±0</div>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-gray-600 mt-1 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                {/* 右側: 前回比 */}
+                <div className="flex-shrink-0 text-right" style={{ width: '65px' }}>
+                  <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
+                  {diff.reps > 0 ? (
+                    <div className="flex flex-col items-end">
+                      <svg className="w-6 h-6 mb-0.5" fill="none" stroke="#22C55E" strokeWidth="3" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E' }}>+{diff.reps}</div>
+                      <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                    </div>
+                  ) : diff.reps < 0 ? (
+                    <div className="flex flex-col items-end">
+                      <svg className="w-6 h-6 mb-0.5" fill="none" stroke="#EF4444" strokeWidth="3" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444' }}>{diff.reps}</div>
+                      <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-end">
+                      <div className="text-2xl font-black leading-none mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280' }}>±0</div>
+                      <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -274,8 +269,8 @@ export default function TrainingSummary() {
       </div>
 
       {/* フッター */}
-      <div className="mt-8 pb-8 text-center">
-        <div className="text-[10px] text-gray-800 tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className="mt-6 pb-6 text-center">
+        <div className="text-[9px] text-gray-800 tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400 }}>
           Generated by Training Tracker
         </div>
       </div>
