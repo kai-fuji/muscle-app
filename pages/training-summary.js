@@ -216,7 +216,7 @@ export default function TrainingSummary() {
 
   return (
     <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
-      <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%' }}>
+      <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%', minWidth: '320px' }}>
       {/* ヘッダー */}
       <div className="relative mb-4 sm:mb-6" style={{ height: '240px', overflow: 'visible' }}>
         {/* 左側のヘッダーテキスト */}
@@ -247,9 +247,9 @@ export default function TrainingSummary() {
           
           return (
             <div key={index} className="border-t border-gray-800 py-3 sm:py-4">
-              <div className="flex items-start gap-2 sm:gap-4">
+              <div className="flex items-start gap-2 sm:gap-3">
                 {/* 左側: 種目情報 */}
-                <div className="flex-shrink-0" style={{ width: '130px', minWidth: '130px' }}>
+                <div className="flex-shrink-0" style={{ width: 'clamp(100px, 28%, 140px)', minWidth: '100px' }}>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="text-[10px] font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>
                       {String(index + 1).padStart(2, '0')}
@@ -265,10 +265,10 @@ export default function TrainingSummary() {
                 </div>
 
                 {/* 中央: セット情報 */}
-                <div className="flex gap-2 sm:gap-3 flex-1">
+                <div className="flex gap-2 sm:gap-3" style={{ width: 'clamp(180px, 60%, 280px)', minWidth: '180px' }}>
                   {item.sets.map((set, setIndex) => (
                     <>
-                    <div key={setIndex} className="flex-1 min-w-0">
+                    <div key={setIndex} style={{ flex: '1 1 0', minWidth: '0' }}>
                       <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
                         SET {setIndex + 1}
                       </div>
@@ -285,14 +285,14 @@ export default function TrainingSummary() {
                       </div>
                     </div>
                     {setIndex < item.sets.length - 1 && (
-                      <div className="w-px bg-gray-800 mx-0.5 sm:mx-1" style={{ height: '70px', marginTop: '15px' }}></div>
+                      <div className="w-px bg-gray-800 mx-0.5 sm:mx-1" style={{ height: '75px', marginTop: '18px' }}></div>
                     )}
                     </>
                   ))}
                 </div>
 
                 {/* 右側: 前回比 */}
-                <div className="flex-shrink-0" style={{ width: '50px', minWidth: '50px' }}>
+                <div className="flex-shrink-0" style={{ width: 'clamp(45px, 12%, 60px)', minWidth: '45px' }}>
                   <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-center text-white" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
                   {diff.reps > 0 ? (
                     <div className="flex flex-col items-center">
