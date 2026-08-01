@@ -13,7 +13,8 @@ import {
   WorkoutIcon,
   CaloriesIcon,
   SetsIcon,
-  UploadIcon
+  UploadIcon,
+  ShareIcon
 } from './Icons'
 
 export default function Layout({ children }) {
