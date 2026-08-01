@@ -112,6 +112,49 @@ export default function TrainingSummary() {
     return '🏋️'
   }
 
+  const getExerciseNameInEnglish = (exerciseName) => {
+    // 種目名を英語に変換
+    const nameMap = {
+      // 胸
+      'ダンベルプレス': 'DUMBBELL PRESS',
+      'インクラインダンベルフライ': 'INCLINE DUMBBELL FLY',
+      'ベンチプレス': 'BENCH PRESS',
+      'インクラインベンチプレス': 'INCLINE BENCH PRESS',
+      'ダンベルフライ': 'DUMBBELL FLY',
+      'ケーブルクロスオーバー': 'CABLE CROSSOVER',
+      'プッシュアップ': 'PUSH UP',
+      // 背中
+      'ラットプルダウン': 'LAT PULLDOWN',
+      'シーテッドロウ': 'SEATED ROW',
+      'ベントオーバーロウ': 'BENT OVER ROW',
+      'デッドリフト': 'DEADLIFT',
+      // 腕
+      'アームカール': 'ARM CURL',
+      'バーベルカール': 'BARBELL CURL',
+      'ダンベルカール': 'DUMBBELL CURL',
+      'ハンマーカール': 'HAMMER CURL',
+      'ダンベルエクステンション': 'DUMBBELL EXTENSION',
+      'ライイングダンベルエクステンション': 'LYING DUMBBELL EXTENSION',
+      'トライセプスエクステンション': 'TRICEPS EXTENSION',
+      // 肩
+      'ショルダープレス': 'SHOULDER PRESS',
+      'サイドレイズ': 'SIDE RAISE',
+      'フロントレイズ': 'FRONT RAISE',
+      'リアレイズ': 'REAR RAISE',
+      // 脚
+      'スクワット': 'SQUAT',
+      'レッグプレス': 'LEG PRESS',
+      'レッグカール': 'LEG CURL',
+      'レッグエクステンション': 'LEG EXTENSION',
+      'カーフレイズ': 'CALF RAISE',
+      // 腹筋
+      'アブローラー': 'AB ROLLER',
+      'ヒップリフト': 'HIP LIFT',
+      '上体起こし': 'SIT UP'
+    }
+    return nameMap[exerciseName] || exerciseName.toUpperCase()
+  }
+
   const calculateDifference = (exercise, currentSets) => {
     const previous = previousData[exercise]
     if (!previous) return { reps: 0, weight: 0 }
@@ -170,21 +213,12 @@ export default function TrainingSummary() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '540px', margin: '0 auto' }}>
+    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
+      <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%' }}>
       {/* ヘッダー */}
-      <div className="relative h-64 mb-0" style={{ background: 'linear-gradient(to right, #000 0%, #000 45%, transparent 45%)' }}>
-        {/* 右側の背景画像 */}
-        <div className="absolute right-0 top-0 w-3/5 h-full overflow-hidden">
-          <img 
-            src="/picture/man.png" 
-            alt="Fitness" 
-            className="w-full h-full object-cover object-center"
-            style={{ filter: 'brightness(0.5) contrast(1.1)' }}
-          />
-        </div>
-        
+      <div className="relative mb-0 flex items-start" style={{ minHeight: '140px' }}>
         {/* 左側のヘッダーテキスト */}
-        <div className="relative z-10 p-6 pt-3">
+        <div className="relative z-10 p-6 pt-3 flex-shrink-0">
           <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
             {format(new Date(), 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
           </div>
@@ -192,10 +226,20 @@ export default function TrainingSummary() {
             TODAY'S<br />MENU
           </h1>
         </div>
+        
+        {/* 右側の背景画像 */}
+        <div className="absolute right-0 top-0 overflow-hidden" style={{ width: '45%', height: '140px' }}>
+          <img 
+            src="/picture/man.png" 
+            alt="Fitness" 
+            className="w-full h-full object-cover object-top"
+            style={{ filter: 'brightness(0.5) contrast(1.1)' }}
+          />
+        </div>
       </div>
 
       {/* トレーニングリスト */}
-      <div className="px-4">
+      <div className="px-3 sm:px-4">
         {todayData.map((item, index) => {
           const diff = calculateDifference(item.exercise, item.sets)
           
@@ -208,7 +252,7 @@ export default function TrainingSummary() {
                     {String(index + 1).padStart(2, '0')}
                   </div>
                   <h3 className="text-sm font-black uppercase leading-tight mb-1" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.03em', fontWeight: 900 }}>
-                    {item.exercise}
+                    {getExerciseNameInEnglish(item.exercise)}
                   </h3>
                   <p className="text-[11px] text-gray-600 mb-3" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400 }}>{item.exercise}</p>
                   <div className="text-5xl mt-2">{getExerciseIcon(item.exercise)}</div>
@@ -221,16 +265,16 @@ export default function TrainingSummary() {
                       <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
                         SET {setIndex + 1}
                       </div>
-                      <div className="text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#00D9FF' }}>
+                      <div className="text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#00D9FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
                         {set.weight}
-                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400 }}>kg</span>
+                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)' }}>kg</span>
                       </div>
-                      <div className="text-xl font-black leading-none mb-1" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900 }}>
+                      <div className="text-xl font-black leading-none mb-1" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
                         {set.reps}
-                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400 }}>REPS</span>
+                        <span className="text-[10px] text-gray-600 ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)' }}>REPS</span>
                       </div>
                       <div className="text-[9px] text-gray-700" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        Tempo {set.negative || 3}s / RIR {set.rir || 1}
+                        Neg {set.negative || 3}s
                       </div>
                     </div>
                   ))}
@@ -244,7 +288,7 @@ export default function TrainingSummary() {
                       <svg className="w-6 h-6 mb-0.5" fill="none" stroke="#22C55E" strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                       </svg>
-                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E' }}>+{diff.reps}</div>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
                       <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : diff.reps < 0 ? (
@@ -252,12 +296,12 @@ export default function TrainingSummary() {
                       <svg className="w-6 h-6 mb-0.5" fill="none" stroke="#EF4444" strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                       </svg>
-                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444' }}>{diff.reps}</div>
+                      <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
                       <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-end">
-                      <div className="text-2xl font-black leading-none mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280' }}>±0</div>
+                      <div className="text-2xl font-black leading-none mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
                       <div className="text-[9px] text-gray-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   )}
@@ -273,6 +317,7 @@ export default function TrainingSummary() {
         <div className="text-[9px] text-gray-800 tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400 }}>
           Generated by Training Tracker
         </div>
+      </div>
       </div>
     </div>
   )
