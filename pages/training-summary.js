@@ -232,8 +232,8 @@ export default function TrainingSummary() {
           <img 
             src="/picture/man.png" 
             alt="Fitness" 
-            className="w-full h-full object-cover object-top"
-            style={{ filter: 'brightness(0.4) contrast(1.1)' }}
+            className="w-full h-full object-cover"
+            style={{ filter: 'brightness(0.4) contrast(1.1)', objectPosition: 'center 20%' }}
           />
         </div>
       </div>
@@ -290,9 +290,9 @@ export default function TrainingSummary() {
                   <div className="text-[9px] text-gray-600 mb-1.5 font-semibold tracking-wide text-right" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
                   {diff.reps > 0 ? (
                     <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-0.5">
+                      <div className="relative inline-block">
                         <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#22C55E', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
-                        <svg className="w-4 h-4 mt-[-4px]" fill="none" stroke="#22C55E" strokeWidth="3" viewBox="0 0 24 24">
+                        <svg className="absolute" style={{ width: '12px', height: '12px', top: '-2px', right: '-14px' }} fill="none" stroke="#22C55E" strokeWidth="3" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
                         </svg>
                       </div>
@@ -300,9 +300,9 @@ export default function TrainingSummary() {
                     </div>
                   ) : diff.reps < 0 ? (
                     <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-0.5">
+                      <div className="relative inline-block">
                         <div className="text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
-                        <svg className="w-4 h-4 mt-[-4px]" fill="none" stroke="#EF4444" strokeWidth="3" viewBox="0 0 24 24">
+                        <svg className="absolute" style={{ width: '12px', height: '12px', top: '-2px', right: '-14px' }} fill="none" stroke="#EF4444" strokeWidth="3" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
                         </svg>
                       </div>
