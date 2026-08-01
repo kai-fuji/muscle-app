@@ -218,7 +218,7 @@ export default function TrainingSummary() {
     <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%', minWidth: '320px' }}>
       {/* ヘッダー */}
-      <div className="relative mb-0" style={{ height: '220px', overflow: 'hidden' }}>
+      <div className="relative mb-0" style={{ overflow: 'visible', minHeight: '160px', paddingBottom: '8px' }}>
         {/* 左側のヘッダーテキスト */}
         <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
           <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
@@ -230,12 +230,12 @@ export default function TrainingSummary() {
         </div>
         
         {/* 右上の画像 */}
-        <div className="absolute right-0 top-0" style={{ width: '180px', maxWidth: '45%', height: '220px' }}>
+        <div className="absolute right-0 top-0" style={{ width: '180px', maxWidth: '45%' }}>
           <img 
             src="/picture/man.png" 
             alt="Fitness" 
-            className="w-full h-full object-contain object-top"
-            style={{ filter: 'brightness(0.4) contrast(1.1)', display: 'block' }}
+            className="w-full h-auto"
+            style={{ filter: 'brightness(0.4) contrast(1.1)', display: 'block', maxHeight: '280px' }}
           />
         </div>
       </div>
