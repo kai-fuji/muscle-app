@@ -1106,7 +1106,7 @@ export default function Training() {
                           {set.weight}kg × {set.reps}
                         </div>
                         <div className="text-gray-400 text-xs">
-                          Set {setIdx + 1}
+                          Set {setIdx + 1} (ネガ{set.negative || 3}秒)
                         </div>
                       </div>
                     ))}

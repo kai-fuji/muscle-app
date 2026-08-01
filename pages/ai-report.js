@@ -10,6 +10,7 @@ export default function AIReport() {
   const [prompt, setPrompt] = useState('')
   const [copied, setCopied] = useState(false)
   const [period, setPeriod] = useState('1month')
+  const [promptType, setPromptType] = useState('lean-bulk')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -280,25 +281,52 @@ ${JSON.stringify(filteredData, null, 2)}
       <h2 className="text-2xl font-bold text-gray-100 mb-6"><span className="inline-flex items-center"><AIIcon size={28} className="text-gray-100 mr-2" />AI解析レポート</span></h2>
 
       {/* 期間選択 */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {[
-          { value: '1month', label: '1か月' },
-          { value: '3months', label: '3か月' },
-          { value: '6months', label: '6か月' },
-          { value: '1year', label: '1年' }
-        ].map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setPeriod(value)}
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              period === value
-                ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <h3 className="text-sm font-medium text-gray-300 mb-2">データ期間</h3>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: '1month', label: '1か月' },
+            { value: '3months', label: '3か月' },
+            { value: '6months', label: '6か月' },
+            { value: '1year', label: '1年' }
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setPeriod(value)}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                period === value
+                  ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                  : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* プロンプトタイプ選択 */}
+      <div className="mb-6">
+        <h3 className="text-sm font-medium text-gray-300 mb-2">分析タイプ</h3>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: 'lean-bulk', label: 'リーンバルク評価', icon: '💪' },
+            { value: 'weight-progress', label: '体重・体脂肪率の経過', icon: '📊' },
+            { value: 'data-only', label: 'データのみ', icon: '📋' }
+          ].map(({ value, label, icon }) => (
+            <button
+              key={value}
+              onClick={() => setPromptType(value)}
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                promptType === value
+                  ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                  : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              <span className="mr-1">{icon}</span>{label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ローディング表示 */}
