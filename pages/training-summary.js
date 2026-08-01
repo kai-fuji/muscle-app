@@ -218,7 +218,7 @@ export default function TrainingSummary() {
     <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%' }}>
       {/* ヘッダー */}
-      <div className="relative mb-4 sm:mb-6" style={{ minHeight: '140px', paddingBottom: '180px' }}>
+      <div className="relative mb-4 sm:mb-6" style={{ minHeight: '140px', paddingBottom: '240px' }}>
         {/* 左側のヘッダーテキスト */}
         <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
           <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
@@ -269,18 +269,18 @@ export default function TrainingSummary() {
                   {item.sets.map((set, setIndex) => (
                     <>
                     <div key={setIndex} className="flex-1 min-w-0">
-                      <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>
+                      <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
                         SET {setIndex + 1}
                       </div>
                       <div className="text-[28px] sm:text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
                         {set.weight}
-                        <span className="text-[8px] sm:text-[10px] ml-0.5 sm:ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)', color: '#66E0FF' }}>kg</span>
+                        <span className="text-[8px] sm:text-[10px] text-white ml-0.5 sm:ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)' }}>kg</span>
                       </div>
-                      <div className="text-base sm:text-xl font-black leading-none mb-1" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
+                      <div className="text-base sm:text-xl font-black leading-none mb-1 text-white" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
                         {set.reps}
-                        <span className="text-[8px] sm:text-[10px] ml-0.5 sm:ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)', color: '#66E0FF' }}>REPS</span>
+                        <span className="text-[8px] sm:text-[10px] text-white ml-0.5 sm:ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)' }}>REPS</span>
                       </div>
-                      <div className="text-[8px] sm:text-[9px]" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>
+                      <div className="text-[8px] sm:text-[9px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
                         Negative {set.negative || 3}s
                       </div>
                     </div>
@@ -293,14 +293,14 @@ export default function TrainingSummary() {
 
                 {/* 右側: 前回比 */}
                 <div className="flex-shrink-0" style={{ width: '50px', minWidth: '50px' }}>
-                  <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>前回比</div>
+                  <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-center text-white" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
                   {diff.reps > 0 ? (
                     <div className="flex flex-col items-center">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
                       </svg>
                       <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>REPS</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : diff.reps < 0 ? (
                     <div className="flex flex-col items-center">
@@ -308,12 +308,12 @@ export default function TrainingSummary() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
                       </svg>
                       <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>REPS</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
                       <div className="text-lg sm:text-2xl font-black leading-none mt-4 sm:mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>REPS</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
                     </div>
                   )}
                 </div>
