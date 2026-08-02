@@ -159,15 +159,33 @@ export default function TrainingSummary() {
 
   const calculateDifference = (exercise, currentSets) => {
     const previous = previousData[exercise]
-    if (!previous) return { reps: 0, weight: 0 }
+    if (!previous || !previous.sets || previous.sets.length === 0) {
+      return { value: null, unit: null, isNew: true } // 新メニュー
+    }
     
-    // 総回数と平均重量で比較
+    // まず平均重量で比較
+    const currentAvgWeight = currentSets.reduce((sum, set) => sum + set.weight, 0) / currentSets.length
+    const previousAvgWeight = previous.sets.reduce((sum, set) => sum + set.weight, 0) / previous.sets.length
+    const weightDiff = (currentAvgWeight - previousAvgWeight).toFixed(1)
+    
+    // 重さが変わっている場合は重さで表示
+    if (parseFloat(weightDiff) !== 0) {
+      return {
+        value: weightDiff,
+        unit: 'kg',
+        isNew: false
+      }
+    }
+    
+    // 重さが同じ場合は総回数で比較
     const currentTotalReps = currentSets.reduce((sum, set) => sum + set.reps, 0)
     const previousTotalReps = previous.sets.reduce((sum, set) => sum + set.reps, 0)
+    const repsDiff = currentTotalReps - previousTotalReps
     
     return {
-      reps: currentTotalReps - previousTotalReps,
-      weight: 0 // 重量の差分は複雑なので回数のみで判定
+      value: repsDiff,
+      unit: 'REPS',
+      isNew: false
     }
   }
 
@@ -296,26 +314,30 @@ export default function TrainingSummary() {
                 {/* 右側: 前回比 */}
                 <div className="flex-shrink-0" style={{ width: 'clamp(45px, 12%, 60px)', minWidth: '45px' }}>
                   <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-center text-white" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
-                  {diff.reps > 0 ? (
+                  {diff.isNew ? (
+                    <div className="flex flex-col items-center justify-center" style={{ minHeight: '60px' }}>
+                      <div className="text-[10px] sm:text-xs font-bold text-center leading-tight" style={{ fontFamily: "'Inter', sans-serif", color: '#10B981' }}>New<br/>menu</div>
+                    </div>
+                  ) : parseFloat(diff.value) > 0 ? (
                     <div className="flex flex-col items-center">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
                       </svg>
-                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.reps}</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.value}</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
-                  ) : diff.reps < 0 ? (
+                  ) : parseFloat(diff.value) < 0 ? (
                     <div className="flex flex-col items-center">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
                       </svg>
-                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.reps}</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.value}</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
                       <div className="text-lg sm:text-2xl font-black leading-none mt-4 sm:mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
-                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>REPS</div>
+                      <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
                   )}
                 </div>

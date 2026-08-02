@@ -142,6 +142,34 @@ export default function BodyData() {
       : 0
   }
 
+  // 直近7日間の平均値を計算
+  const getRecentAverage = () => {
+    if (data.length === 0) return null
+    
+    // データを日付でソート
+    const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
+    
+    // 直近7日間のデータを取得
+    const recentData = sortedData.slice(0, Math.min(7, sortedData.length))
+    
+    // 体重の平均
+    const avgWeight = recentData.reduce((sum, d) => sum + d.weight, 0) / recentData.length
+    
+    // 体脂肪率の平均（nullを除外）
+    const validBodyFat = recentData.filter(d => d.body_fat_percentage != null)
+    const avgBodyFat = validBodyFat.length > 0
+      ? validBodyFat.reduce((sum, d) => sum + d.body_fat_percentage, 0) / validBodyFat.length
+      : null
+    
+    return {
+      weight: avgWeight.toFixed(1),
+      bodyFat: avgBodyFat ? avgBodyFat.toFixed(1) : null,
+      days: recentData.length
+    }
+  }
+
+  const recentAverage = getRecentAverage()
+
   // グラフ用のデータセットを準備（日付ベース）
   const prepareWeightChartData = () => {
     if (filteredData.length === 0) {
@@ -508,30 +536,33 @@ export default function BodyData() {
       </AnimatePresence>
 
       {/* 現在の状況 */}
-      {stats.latest && (
+      {recentAverage && (
         <div className="gradient-card mb-6">
-          <h3 className="text-white/80 text-sm font-medium mb-4">現在の状況</h3>
+          <h3 className="text-white/80 text-sm font-medium mb-4">直近{recentAverage.days}日間の平均</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="flex items-baseline">
-                <span className="text-5xl font-bold">{stats.latest.weight}</span>
+                <span className="text-5xl font-bold">{recentAverage.weight}</span>
                 <span className="text-xl ml-2 text-white/80">kg</span>
               </div>
               <p className="text-white/80 text-sm mt-1">体重</p>
             </div>
             <div>
               <div className="flex items-baseline">
-                <span className="text-5xl font-bold">{stats.latest.body_fat_percentage || '-'}</span>
+                <span className="text-5xl font-bold">{recentAverage.bodyFat || '-'}</span>
                 <span className="text-xl ml-2 text-white/80">%</span>
               </div>
               <p className="text-white/80 text-sm mt-1">体脂肪率</p>
             </div>
           </div>
-          {stats.change !== 0 && (
+          {stats.latest && (
             <div className="mt-4 pt-4 border-t border-white/20">
-              <span className="text-white/90 text-sm">
-                前回から {stats.change > 0 ? '+' : ''}{stats.change}kg
-              </span>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/70">最新記録（{format(new Date(stats.latest.date), 'M/d')}）</span>
+                <span className="text-white/90">
+                  {stats.latest.weight}kg / {stats.latest.body_fat_percentage || '-'}%
+                </span>
+              </div>
             </div>
           )}
         </div>
