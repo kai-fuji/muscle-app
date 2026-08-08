@@ -38,7 +38,7 @@ export default function Inbody() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/inbody')
+      const res = await fetch('/api/Inbody')
       const json = await res.json()
       setData(json)
     } catch (error) {
@@ -50,7 +50,7 @@ export default function Inbody() {
     e.preventDefault()
     
     try {
-      const res = await fetch('/api/inbody', {
+      const res = await fetch('/api/Inbody', {
         method: editingDate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -115,7 +115,7 @@ export default function Inbody() {
     if (!confirm('このデータを削除しますか？')) return
     
     try {
-      const res = await fetch(`/api/inbody?date=${date}`, {
+      const res = await fetch(`/api/Inbody?date=${date}`, {
         method: 'DELETE'
       })
       
