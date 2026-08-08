@@ -12,6 +12,7 @@ export default function Inbody() {
   const [editingDate, setEditingDate] = useState(null)
   const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
   const [selectedBodyPart, setSelectedBodyPart] = useState(null) // 選択された部位
+  const [showMuscle, setShowMuscle] = useState(true) // true: 筋肉量, false: 体脂肪量
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
@@ -481,8 +482,8 @@ export default function Inbody() {
 
 
 
-  // 選択された部位の筋肉量グラフ用のデータセットを準備
-  const prepareSelectedPartMuscleChartData = (partName) => {
+  // 選択された部位のグラフ用のデータセットを準備
+  const prepareSelectedPartChartData = (partName, isMuscle) => {
     if (filteredData.length === 0) {
       return { labels: [], datasets: [] }
     }
@@ -491,30 +492,64 @@ export default function Inbody() {
     const labels = sortedData.map(d => format(new Date(d.date), 'M/d'))
     
     const partConfig = {
-      'right_arm': { label: '右腕筋肉量', field: 'right_arm_muscle', color: '#FF6B6B' },
-      'left_arm': { label: '左腕筋肉量', field: 'left_arm_muscle', color: '#4ECDC4' },
-      'trunk': { label: '体幹筋肉量', field: 'trunk_muscle', color: '#95E1D3' },
-      'right_leg': { label: '右脚筋肉量', field: 'right_leg_muscle', color: '#F38181' },
-      'left_leg': { label: '左脚筋肉量', field: 'left_leg_muscle', color: '#AA96DA' },
+      'right_arm': { 
+        muscleLabel: '右腕筋肉量', 
+        fatLabel: '右腕体脂肪量',
+        muscleField: 'right_arm_muscle',
+        fatField: 'right_arm_fat',
+        color: '#FF6B6B' 
+      },
+      'left_arm': { 
+        muscleLabel: '左腕筋肉量', 
+        fatLabel: '左腕体脂肪量',
+        muscleField: 'left_arm_muscle',
+        fatField: 'left_arm_fat',
+        color: '#4ECDC4' 
+      },
+      'trunk': { 
+        muscleLabel: '体幹筋肉量', 
+        fatLabel: '体幹体脂肪量',
+        muscleField: 'trunk_muscle',
+        fatField: 'trunk_fat',
+        color: '#95E1D3' 
+      },
+      'right_leg': { 
+        muscleLabel: '右脚筋肉量', 
+        fatLabel: '右脚体脂肪量',
+        muscleField: 'right_leg_muscle',
+        fatField: 'right_leg_fat',
+        color: '#F38181' 
+      },
+      'left_leg': { 
+        muscleLabel: '左脚筋肉量', 
+        fatLabel: '左脚体脂肪量',
+        muscleField: 'left_leg_muscle',
+        fatField: 'left_leg_fat',
+        color: '#AA96DA' 
+      },
     }
     
     const config = partConfig[partName]
     if (!config) return { labels: [], datasets: [] }
     
+    const field = isMuscle ? config.muscleField : config.fatField
+    const label = isMuscle ? config.muscleLabel : config.fatLabel
+    const color = isMuscle ? config.color : '#FFA07A'
+    
     return {
       labels,
       datasets: [
         {
-          label: config.label,
-          data: sortedData.map(d => d[config.field]),
-          borderColor: config.color,
-          backgroundColor: `${config.color}30`,
+          label: label,
+          data: sortedData.map(d => d[field]),
+          borderColor: color,
+          backgroundColor: `${color}30`,
           borderWidth: 3,
           tension: 0.4,
           fill: true,
           pointRadius: 4,
           pointHoverRadius: 6,
-          pointBackgroundColor: config.color,
+          pointBackgroundColor: color,
           pointBorderColor: '#000',
           pointBorderWidth: 2,
           spanGaps: true,
@@ -882,14 +917,44 @@ export default function Inbody() {
       {/* 部位別データ表示 */}
       {stats.latest && (stats.latest.right_arm_muscle || stats.latest.left_arm_muscle || stats.latest.trunk_muscle || stats.latest.right_leg_muscle || stats.latest.left_leg_muscle) && (
         <Card title="部位別詳細">
-          <div className="relative" style={{ minHeight: '650px', paddingTop: '20px', paddingBottom: '20px' }}>
+          {/* 筋肉/体脂肪切り替え */}
+          <div className="flex justify-center mb-4">
+            <div className="inline-flex items-center gap-3 bg-gray-800/50 rounded-lg p-2 border border-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showMuscle}
+                  onChange={(e) => setShowMuscle(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-900"
+                />
+                <span className={`text-sm font-medium ${showMuscle ? 'text-cyan-400' : 'text-gray-400'}`}>
+                  筋肉量
+                </span>
+              </label>
+              <div className="w-px h-4 bg-gray-600"></div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!showMuscle}
+                  onChange={(e) => setShowMuscle(!e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-gray-900"
+                />
+                <span className={`text-sm font-medium ${!showMuscle ? 'text-orange-400' : 'text-gray-400'}`}>
+                  体脂肪量
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="relative" style={{ minHeight: 'min(650px, 80vh)', paddingTop: '20px', paddingBottom: '20px' }}>
             {/* 人体画像を中央に配置 */}
-            <div className="flex justify-center items-center" style={{ height: '650px' }}>
+            <div className="flex justify-center items-center" style={{ height: 'min(650px, 80vh)' }}>
               <img 
                 src="/picture/mattyo.png" 
                 alt="人体図" 
                 style={{ 
-                  width: '220px', 
+                  width: '100%',
+                  maxWidth: '220px',
                   height: 'auto', 
                   opacity: 0.4,
                   position: 'relative'
@@ -903,23 +968,13 @@ export default function Inbody() {
               style={{ top: '5%', left: '50%', transform: 'translateX(-50%)' }}
               onClick={() => setSelectedBodyPart(selectedBodyPart === 'trunk' ? null : 'trunk')}
             >
-              <div className={`bg-gray-800/95 rounded-xl p-3 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'trunk' ? 'border-green-500 ring-2 ring-green-500' : 'border-green-500/40'}`}>
-                <div className="text-sm text-green-400 font-medium mb-2 text-center">体幹</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">筋肉</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-white">{stats.latest.trunk_muscle || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">体脂肪</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-orange-400">{stats.latest.trunk_fat || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
+              <div className={`bg-gray-800/95 rounded-lg px-3 py-2 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'trunk' ? 'border-green-500 ring-2 ring-green-500' : 'border-green-500/40'}`}>
+                <div className="text-xs text-green-400 font-medium text-center mb-1">体幹</div>
+                <div className="text-center">
+                  <span className="text-base font-bold text-white">
+                    {showMuscle ? (stats.latest.trunk_muscle || '-') : (stats.latest.trunk_fat || '-')}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">kg</span>
                 </div>
               </div>
             </div>
@@ -930,23 +985,13 @@ export default function Inbody() {
               style={{ top: '22%', left: '8%' }}
               onClick={() => setSelectedBodyPart(selectedBodyPart === 'right_arm' ? null : 'right_arm')}
             >
-              <div className={`bg-gray-800/95 rounded-xl p-3 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'right_arm' ? 'border-cyan-500 ring-2 ring-cyan-500' : 'border-cyan-500/40'}`}>
-                <div className="text-sm text-cyan-400 font-medium mb-2">右腕</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">筋肉</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-white">{stats.latest.right_arm_muscle || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">体脂肪</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-orange-400">{stats.latest.right_arm_fat || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
+              <div className={`bg-gray-800/95 rounded-lg px-3 py-2 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'right_arm' ? 'border-cyan-500 ring-2 ring-cyan-500' : 'border-cyan-500/40'}`}>
+                <div className="text-xs text-cyan-400 font-medium text-center mb-1">右腕</div>
+                <div className="text-center">
+                  <span className="text-base font-bold text-white">
+                    {showMuscle ? (stats.latest.right_arm_muscle || '-') : (stats.latest.right_arm_fat || '-')}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">kg</span>
                 </div>
               </div>
             </div>
@@ -957,23 +1002,13 @@ export default function Inbody() {
               style={{ top: '22%', right: '8%' }}
               onClick={() => setSelectedBodyPart(selectedBodyPart === 'left_arm' ? null : 'left_arm')}
             >
-              <div className={`bg-gray-800/95 rounded-xl p-3 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'left_arm' ? 'border-cyan-500 ring-2 ring-cyan-500' : 'border-cyan-500/40'}`}>
-                <div className="text-sm text-cyan-400 font-medium mb-2">左腕</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">筋肉</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-white">{stats.latest.left_arm_muscle || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">体脂肪</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-orange-400">{stats.latest.left_arm_fat || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
+              <div className={`bg-gray-800/95 rounded-lg px-3 py-2 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'left_arm' ? 'border-cyan-500 ring-2 ring-cyan-500' : 'border-cyan-500/40'}`}>
+                <div className="text-xs text-cyan-400 font-medium text-center mb-1">左腕</div>
+                <div className="text-center">
+                  <span className="text-base font-bold text-white">
+                    {showMuscle ? (stats.latest.left_arm_muscle || '-') : (stats.latest.left_arm_fat || '-')}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">kg</span>
                 </div>
               </div>
             </div>
@@ -984,23 +1019,13 @@ export default function Inbody() {
               style={{ bottom: '8%', left: '15%' }}
               onClick={() => setSelectedBodyPart(selectedBodyPart === 'right_leg' ? null : 'right_leg')}
             >
-              <div className={`bg-gray-800/95 rounded-xl p-3 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'right_leg' ? 'border-purple-500 ring-2 ring-purple-500' : 'border-purple-500/40'}`}>
-                <div className="text-sm text-purple-400 font-medium mb-2">右脚</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">筋肉</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-white">{stats.latest.right_leg_muscle || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">体脂肪</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-orange-400">{stats.latest.right_leg_fat || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
+              <div className={`bg-gray-800/95 rounded-lg px-3 py-2 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'right_leg' ? 'border-purple-500 ring-2 ring-purple-500' : 'border-purple-500/40'}`}>
+                <div className="text-xs text-purple-400 font-medium text-center mb-1">右脚</div>
+                <div className="text-center">
+                  <span className="text-base font-bold text-white">
+                    {showMuscle ? (stats.latest.right_leg_muscle || '-') : (stats.latest.right_leg_fat || '-')}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">kg</span>
                 </div>
               </div>
             </div>
@@ -1011,23 +1036,13 @@ export default function Inbody() {
               style={{ bottom: '8%', right: '15%' }}
               onClick={() => setSelectedBodyPart(selectedBodyPart === 'left_leg' ? null : 'left_leg')}
             >
-              <div className={`bg-gray-800/95 rounded-xl p-3 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'left_leg' ? 'border-purple-500 ring-2 ring-purple-500' : 'border-purple-500/40'}`}>
-                <div className="text-sm text-purple-400 font-medium mb-2">左脚</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">筋肉</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-white">{stats.latest.left_leg_muscle || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center gap-3">
-                    <span className="text-xs text-gray-400">体脂肪</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-orange-400">{stats.latest.left_leg_fat || '-'}</span>
-                      <span className="text-xs text-gray-400">kg</span>
-                    </div>
-                  </div>
+              <div className={`bg-gray-800/95 rounded-lg px-3 py-2 border backdrop-blur-sm shadow-xl ${selectedBodyPart === 'left_leg' ? 'border-purple-500 ring-2 ring-purple-500' : 'border-purple-500/40'}`}>
+                <div className="text-xs text-purple-400 font-medium text-center mb-1">左脚</div>
+                <div className="text-center">
+                  <span className="text-base font-bold text-white">
+                    {showMuscle ? (stats.latest.left_leg_muscle || '-') : (stats.latest.left_leg_fat || '-')}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">kg</span>
                 </div>
               </div>
             </div>
@@ -1035,7 +1050,7 @@ export default function Inbody() {
         </Card>
       )}
 
-      {/* 選択された部位の筋肉量グラフ */}
+      {/* 選択された部位のグラフ */}
       {selectedBodyPart && filteredData.length > 0 && (
         <Card title={`${{
           'right_arm': '右腕',
@@ -1043,10 +1058,10 @@ export default function Inbody() {
           'trunk': '体幹',
           'right_leg': '右脚',
           'left_leg': '左脚'
-        }[selectedBodyPart]}筋肉量推移`}>
+        }[selectedBodyPart]}${showMuscle ? '筋肉量' : '体脂肪量'}推移`}>
           <Chart
-            datasets={prepareSelectedPartMuscleChartData(selectedBodyPart).datasets}
-            labels={prepareSelectedPartMuscleChartData(selectedBodyPart).labels}
+            datasets={prepareSelectedPartChartData(selectedBodyPart, showMuscle).datasets}
+            labels={prepareSelectedPartChartData(selectedBodyPart, showMuscle).labels}
           />
         </Card>
       )}
