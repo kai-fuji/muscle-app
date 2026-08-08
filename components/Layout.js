@@ -24,6 +24,7 @@ export default function Layout({ children }) {
   const navItems = [
     { path: '/', icon: <DashboardIcon size={20} />, label: 'ダッシュボード' },
     { path: '/body-data', icon: <BodyDataIcon size={20} />, label: '身体データ' },
+    { path: '/Inbody', icon: <BodyDataIcon size={20} />, label: 'InBodyデータ' },
     { path: '/nutrition', icon: <NutritionIcon size={20} />, label: '栄養' },
     { path: '/training', icon: <TrainingIcon size={20} />, label: 'トレーニング' },
     { path: '/training-summary', icon: <WorkoutIcon size={20} />, label: 'SNS投稿' },
