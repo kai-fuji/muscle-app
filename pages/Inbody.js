@@ -4,7 +4,7 @@ import Card from '../components/Card'
 import Chart from '../components/Chart'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon } from '../components/Icons'
+import { AIIcon, BodyDataIcon, BodyPartIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon } from '../components/Icons'
 
 export default function Inbody() {
   const [data, setData] = useState([])
@@ -959,6 +959,103 @@ export default function Inbody() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 部位別データ表示 */}
+      {stats.latest && (stats.latest.right_arm_muscle || stats.latest.left_arm_muscle || stats.latest.trunk_muscle || stats.latest.right_leg_muscle || stats.latest.left_leg_muscle) && (
+        <Card title="部位別詳細">
+          <div className="relative flex justify-center items-center py-8" style={{ minHeight: '500px' }}>
+            {/* 中央の人体アイコン */}
+            <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+              <BodyPartIcon size={180} className="text-gray-600" />
+            </div>
+
+            {/* 右腕（画面左側） */}
+            <div className="absolute" style={{ top: '25%', left: '5%' }}>
+              <div className="bg-gray-800/90 rounded-xl p-3 border border-cyan-500/30 backdrop-blur-sm">
+                <div className="text-xs text-cyan-400 font-medium mb-2">右腕</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-white">💪</span>
+                  <span className="text-lg font-bold text-white">{stats.latest.right_arm_muscle || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-white">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{stats.latest.right_arm_fat || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 左腕（画面右側） */}
+            <div className="absolute" style={{ top: '25%', right: '5%' }}>
+              <div className="bg-gray-800/90 rounded-xl p-3 border border-cyan-500/30 backdrop-blur-sm">
+                <div className="text-xs text-cyan-400 font-medium mb-2">左腕</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-white">💪</span>
+                  <span className="text-lg font-bold text-white">{stats.latest.left_arm_muscle || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-white">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{stats.latest.left_arm_fat || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 体幹（上部中央） */}
+            <div className="absolute" style={{ top: '5%', left: '50%', transform: 'translateX(-50%)' }}>
+              <div className="bg-gray-800/90 rounded-xl p-3 border border-green-500/30 backdrop-blur-sm">
+                <div className="text-xs text-green-400 font-medium mb-2">体幹</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-white">💪</span>
+                  <span className="text-lg font-bold text-white">{stats.latest.trunk_muscle || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-white">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{stats.latest.trunk_fat || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 右脚（画面左下） */}
+            <div className="absolute" style={{ bottom: '5%', left: '15%' }}>
+              <div className="bg-gray-800/90 rounded-xl p-3 border border-purple-500/30 backdrop-blur-sm">
+                <div className="text-xs text-purple-400 font-medium mb-2">右脚</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-white">💪</span>
+                  <span className="text-lg font-bold text-white">{stats.latest.right_leg_muscle || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-white">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{stats.latest.right_leg_fat || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 左脚（画面右下） */}
+            <div className="absolute" style={{ bottom: '5%', right: '15%' }}>
+              <div className="bg-gray-800/90 rounded-xl p-3 border border-purple-500/30 backdrop-blur-sm">
+                <div className="text-xs text-purple-400 font-medium mb-2">左脚</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-white">💪</span>
+                  <span className="text-lg font-bold text-white">{stats.latest.left_leg_muscle || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-white">🔥</span>
+                  <span className="text-lg font-bold text-orange-400">{stats.latest.left_leg_fat || '-'}</span>
+                  <span className="text-xs text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* グラフ */}

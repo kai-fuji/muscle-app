@@ -281,6 +281,33 @@ export const SettingsIcon = ({ size = 24, className = '' }) => (
   </svg>
 )
 
+// BodyPart（人体アイコン）
+export const BodyPartIcon = ({ size = 24, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 100 240" className={className} {...iconProps}>
+    {/* 頭 */}
+    <circle cx="50" cy="15" r="12" />
+    {/* 首 */}
+    <line x1="50" y1="27" x2="50" y2="35" />
+    {/* 肩 */}
+    <line x1="35" y1="40" x2="65" y2="40" />
+    {/* 右腕 */}
+    <path d="M35 40 L20 60 L22 95" />
+    {/* 左腕 */}
+    <path d="M65 40 L80 60 L78 95" />
+    {/* 体幹 */}
+    <rect x="38" y="35" width="24" height="50" rx="3" />
+    {/* 腰 */}
+    <line x1="42" y1="85" x2="42" y2="95" />
+    <line x1="58" y1="85" x2="58" y2="95" />
+    {/* 右脚 */}
+    <path d="M42 95 L38 140 L36 190" />
+    {/* 左脚 */}
+    <path d="M58 95 L62 140 L64 190" />
+  </svg>
+)
+  </svg>
+)
+
 // Box / Package（箱）
 export const BoxIcon = ({ size = 24, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...iconProps}>
