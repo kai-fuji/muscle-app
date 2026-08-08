@@ -946,15 +946,14 @@ export default function Inbody() {
             </div>
           </div>
 
-          <div className="relative" style={{ minHeight: 'min(650px, 80vh)', paddingTop: '20px', paddingBottom: '20px' }}>
+          <div className="relative" style={{ minHeight: 'min(400px, 50vh)', paddingTop: '20px', paddingBottom: '20px' }}>
             {/* 人体画像を中央に配置 */}
-            <div className="flex justify-center items-center" style={{ height: 'min(650px, 80vh)' }}>
+            <div className="flex justify-center items-center" style={{ height: 'min(400px, 50vh)' }}>
               <img 
                 src="/picture/mattyo.png" 
                 alt="人体図" 
+                className="w-full max-w-[180px] md:max-w-[220px]" 
                 style={{ 
-                  width: '100%',
-                  maxWidth: '220px',
                   height: 'auto', 
                   opacity: 0.4,
                   position: 'relative'
