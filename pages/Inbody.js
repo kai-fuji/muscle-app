@@ -227,12 +227,17 @@ export default function Inbody() {
 
   // 統計情報を計算
   const stats = {
-    latest: data.length > 0 ? data[data.length - 1] : null,
+    latest: data.length > 0 
+      ? [...data].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+      : null,
     average: filteredData.length > 0 
       ? (filteredData.reduce((sum, d) => sum + d.weight, 0) / filteredData.length).toFixed(1)
       : 0,
     change: data.length > 1
-      ? (data[data.length - 1].weight - data[data.length - 2].weight).toFixed(1)
+      ? (() => {
+          const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
+          return (sorted[0].weight - sorted[1].weight).toFixed(1)
+        })()
       : 0
   }
 
@@ -964,93 +969,129 @@ export default function Inbody() {
       {/* 部位別データ表示 */}
       {stats.latest && (stats.latest.right_arm_muscle || stats.latest.left_arm_muscle || stats.latest.trunk_muscle || stats.latest.right_leg_muscle || stats.latest.left_leg_muscle) && (
         <Card title="部位別詳細">
-          <div className="relative flex justify-center items-center py-12" style={{ minHeight: '600px' }}>
-            {/* 中央の人体画像 */}
-            <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-              <img src="/picture/mattyo.png" alt="人体図" style={{ width: '200px', height: 'auto', opacity: 0.6 }} />
-            </div>
-
-            {/* 右腕（画面左側） */}
-            <div className="absolute" style={{ top: '20%', left: '2%' }}>
-              <div className="bg-gray-800/95 rounded-xl p-3 border border-cyan-500/40 backdrop-blur-sm shadow-xl">
-                <div className="text-xs text-cyan-400 font-medium mb-2">右腕</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">筋肉:</span>
-                  <span className="text-lg font-bold text-white">{stats.latest.right_arm_muscle || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+          <div className="relative" style={{ minHeight: '500px', paddingTop: '40px', paddingBottom: '40px' }}>
+            {/* 3カラムレイアウト */}
+            <div className="grid grid-cols-3 gap-4 items-center">
+              {/* 左列: 右腕と右脚 */}
+              <div className="space-y-8">
+                {/* 右腕 */}
+                <div className="bg-gray-800/95 rounded-xl p-4 border border-cyan-500/40 backdrop-blur-sm shadow-xl">
+                  <div className="text-sm text-cyan-400 font-medium mb-3">右腕</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">筋肉</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{stats.latest.right_arm_muscle || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">体脂肪</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-orange-400">{stats.latest.right_arm_fat || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">体脂肪:</span>
-                  <span className="text-lg font-bold text-orange-400">{stats.latest.right_arm_fat || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+
+                {/* 右脚 */}
+                <div className="bg-gray-800/95 rounded-xl p-4 border border-purple-500/40 backdrop-blur-sm shadow-xl">
+                  <div className="text-sm text-purple-400 font-medium mb-3">右脚</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">筋肉</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{stats.latest.right_leg_muscle || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">体脂肪</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-orange-400">{stats.latest.right_leg_fat || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 左腕（画面右側） */}
-            <div className="absolute" style={{ top: '20%', right: '2%' }}>
-              <div className="bg-gray-800/95 rounded-xl p-3 border border-cyan-500/40 backdrop-blur-sm shadow-xl">
-                <div className="text-xs text-cyan-400 font-medium mb-2">左腕</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">筋肉:</span>
-                  <span className="text-lg font-bold text-white">{stats.latest.left_arm_muscle || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+              {/* 中央列: 人体画像と体幹 */}
+              <div className="flex flex-col items-center space-y-6">
+                {/* 体幹 */}
+                <div className="bg-gray-800/95 rounded-xl p-4 border border-green-500/40 backdrop-blur-sm shadow-xl w-full">
+                  <div className="text-sm text-green-400 font-medium mb-3 text-center">体幹</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">筋肉</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{stats.latest.trunk_muscle || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">体脂肪</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-orange-400">{stats.latest.trunk_fat || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">体脂肪:</span>
-                  <span className="text-lg font-bold text-orange-400">{stats.latest.left_arm_fat || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+
+                {/* 人体画像 */}
+                <div className="flex justify-center">
+                  <img 
+                    src="/picture/mattyo.png" 
+                    alt="人体図" 
+                    style={{ width: '180px', height: 'auto', opacity: 0.5 }} 
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* 体幹（上部中央） */}
-            <div className="absolute" style={{ top: '2%', left: '50%', transform: 'translateX(-50%)' }}>
-              <div className="bg-gray-800/95 rounded-xl p-3 border border-green-500/40 backdrop-blur-sm shadow-xl">
-                <div className="text-xs text-green-400 font-medium mb-2">体幹</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">筋肉:</span>
-                  <span className="text-lg font-bold text-white">{stats.latest.trunk_muscle || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+              {/* 右列: 左腕と左脚 */}
+              <div className="space-y-8">
+                {/* 左腕 */}
+                <div className="bg-gray-800/95 rounded-xl p-4 border border-cyan-500/40 backdrop-blur-sm shadow-xl">
+                  <div className="text-sm text-cyan-400 font-medium mb-3">左腕</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">筋肉</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{stats.latest.left_arm_muscle || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">体脂肪</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-orange-400">{stats.latest.left_arm_fat || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">体脂肪:</span>
-                  <span className="text-lg font-bold text-orange-400">{stats.latest.trunk_fat || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
-                </div>
-              </div>
-            </div>
 
-            {/* 右脚（画面左下） */}
-            <div className="absolute" style={{ bottom: '2%', left: '8%' }}>
-              <div className="bg-gray-800/95 rounded-xl p-3 border border-purple-500/40 backdrop-blur-sm shadow-xl">
-                <div className="text-xs text-purple-400 font-medium mb-2">右脚</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">筋肉:</span>
-                  <span className="text-lg font-bold text-white">{stats.latest.right_leg_muscle || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">体脂肪:</span>
-                  <span className="text-lg font-bold text-orange-400">{stats.latest.right_leg_fat || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 左脚（画面右下） */}
-            <div className="absolute" style={{ bottom: '2%', right: '8%' }}>
-              <div className="bg-gray-800/95 rounded-xl p-3 border border-purple-500/40 backdrop-blur-sm shadow-xl">
-                <div className="text-xs text-purple-400 font-medium mb-2">左脚</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">筋肉:</span>
-                  <span className="text-lg font-bold text-white">{stats.latest.left_leg_muscle || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">体脂肪:</span>
-                  <span className="text-lg font-bold text-orange-400">{stats.latest.left_leg_fat || '-'}</span>
-                  <span className="text-xs text-gray-400">kg</span>
+                {/* 左脚 */}
+                <div className="bg-gray-800/95 rounded-xl p-4 border border-purple-500/40 backdrop-blur-sm shadow-xl">
+                  <div className="text-sm text-purple-400 font-medium mb-3">左脚</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">筋肉</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{stats.latest.left_leg_muscle || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">体脂肪</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-orange-400">{stats.latest.left_leg_fat || '-'}</span>
+                        <span className="text-xs text-gray-400">kg</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
