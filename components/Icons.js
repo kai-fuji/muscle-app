@@ -305,8 +305,6 @@ export const BodyPartIcon = ({ size = 24, className = '' }) => (
     <path d="M58 95 L62 140 L64 190" />
   </svg>
 )
-  </svg>
-)
 
 // Box / Package（箱）
 export const BoxIcon = ({ size = 24, className = '' }) => (
