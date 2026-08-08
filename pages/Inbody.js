@@ -4,7 +4,7 @@ import Card from '../components/Card'
 import Chart from '../components/Chart'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
-import { AIIcon, BodyDataIcon, BodyPartIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon } from '../components/Icons'
+import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon } from '../components/Icons'
 
 export default function Inbody() {
   const [data, setData] = useState([])
@@ -965,9 +965,9 @@ export default function Inbody() {
       {stats.latest && (stats.latest.right_arm_muscle || stats.latest.left_arm_muscle || stats.latest.trunk_muscle || stats.latest.right_leg_muscle || stats.latest.left_leg_muscle) && (
         <Card title="部位別詳細">
           <div className="relative flex justify-center items-center py-8" style={{ minHeight: '500px' }}>
-            {/* 中央の人体アイコン */}
+            {/* 中央の人体画像 */}
             <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-              <BodyPartIcon size={180} className="text-gray-600" />
+              <img src="/picture/mattyo.png" alt="人体図" style={{ width: '180px', height: 'auto', opacity: 0.7 }} />
             </div>
 
             {/* 右腕（画面左側） */}
