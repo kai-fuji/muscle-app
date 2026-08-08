@@ -236,36 +236,6 @@ export default function Inbody() {
       : 0
   }
 
-  // 直近7日間の平均値を計算
-  const getRecentAverage = () => {
-    if (data.length === 0) return null
-    
-    // データを日付でソート
-    const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date))
-    
-    // 直近7日間のデータを取得
-    const recentData = sortedData.slice(0, Math.min(7, sortedData.length))
-    
-    // 各項目の平均（nullを除外）
-    const calcAvg = (field) => {
-      const validData = recentData.filter(d => d[field] != null)
-      return validData.length > 0
-        ? (validData.reduce((sum, d) => sum + d[field], 0) / validData.length).toFixed(1)
-        : null
-    }
-    
-    return {
-      weight: calcAvg('weight'),
-      bodyFat: calcAvg('body_fat_percentage'),
-      skeletalMuscle: calcAvg('skeletal_muscle_mass'),
-      basalMetabolicRate: calcAvg('basal_metabolic_rate'),
-      inbodyScore: calcAvg('inbody_score'),
-      days: recentData.length
-    }
-  }
-
-  const recentAverage = getRecentAverage()
-
   // グラフ用のデータセットを準備（日付ベース）
   const prepareWeightChartData = () => {
     if (filteredData.length === 0) {
@@ -503,29 +473,157 @@ export default function Inbody() {
     }
   }
 
+  // 部位別筋肉量グラフ用のデータセットを準備
+  const prepareBodyPartMuscleChartData = () => {
+    if (filteredData.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    const sortedData = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date))
+    const labels = sortedData.map(d => format(new Date(d.date), 'M/d'))
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: '右腕',
+          data: sortedData.map(d => d.right_arm_muscle),
+          borderColor: '#FF6B6B',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '左腕',
+          data: sortedData.map(d => d.left_arm_muscle),
+          borderColor: '#4ECDC4',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '体幹',
+          data: sortedData.map(d => d.trunk_muscle),
+          borderColor: '#95E1D3',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '右脚',
+          data: sortedData.map(d => d.right_leg_muscle),
+          borderColor: '#F38181',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '左脚',
+          data: sortedData.map(d => d.left_leg_muscle),
+          borderColor: '#AA96DA',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+      ]
+    }
+  }
+
+  // 部位別体脂肪量グラフ用のデータセットを準備
+  const prepareBodyPartFatChartData = () => {
+    if (filteredData.length === 0) {
+      return { labels: [], datasets: [] }
+    }
+
+    const sortedData = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date))
+    const labels = sortedData.map(d => format(new Date(d.date), 'M/d'))
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: '右腕',
+          data: sortedData.map(d => d.right_arm_fat),
+          borderColor: '#FFB347',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '左腕',
+          data: sortedData.map(d => d.left_arm_fat),
+          borderColor: '#FF6961',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '体幹',
+          data: sortedData.map(d => d.trunk_fat),
+          borderColor: '#CB99C9',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '右脚',
+          data: sortedData.map(d => d.right_leg_fat),
+          borderColor: '#77DD77',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+        {
+          label: '左脚',
+          data: sortedData.map(d => d.left_leg_fat),
+          borderColor: '#AEC6CF',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          spanGaps: true,
+        },
+      ]
+    }
+  }
+
   return (
     <div>
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-100"><span className="inline-flex items-center"><BodyDataIcon size={28} className="text-gray-100 mr-2" />InBodyデータ</span></h2>
         <div className="flex gap-3">
-          {data.length === 0 && (
-            <>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="csv-upload"
-              />
-              <label
-                htmlFor="csv-upload"
-                className="border-2 border-green-500 text-green-400 hover:bg-green-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                CSVアップロード
-              </label>
-            </>
-          )}
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="csv-upload"
+          />
+          <label
+            htmlFor="csv-upload"
+            className="border-2 border-green-500 text-green-400 hover:bg-green-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer"
+          >
+            CSVアップロード
+          </label>
           <button
             onClick={() => setShowForm(!showForm)}
             className="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
@@ -817,28 +915,28 @@ export default function Inbody() {
         )}
       </AnimatePresence>
 
-      {/* 現在の状況 */}
-      {recentAverage && (
+      {/* 最新のデータ */}
+      {stats.latest && (
         <div className="gradient-card mb-6">
-          <h3 className="text-white/80 text-sm font-medium mb-4">直近{recentAverage.days}日間の平均</h3>
+          <h3 className="text-white/80 text-sm font-medium mb-4">最新記録（{format(new Date(stats.latest.date), 'yyyy年M月d日')}）</h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">{recentAverage.weight || '-'}</span>
+                <span className="text-3xl font-bold">{stats.latest.weight || '-'}</span>
                 <span className="text-lg ml-2 text-white/80">kg</span>
               </div>
               <p className="text-white/80 text-xs mt-1">体重</p>
             </div>
             <div>
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">{recentAverage.bodyFat || '-'}</span>
+                <span className="text-3xl font-bold">{stats.latest.body_fat_percentage || '-'}</span>
                 <span className="text-lg ml-2 text-white/80">%</span>
               </div>
               <p className="text-white/80 text-xs mt-1">体脂肪率</p>
             </div>
             <div>
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">{recentAverage.skeletalMuscle || '-'}</span>
+                <span className="text-3xl font-bold">{stats.latest.skeletal_muscle_mass || '-'}</span>
                 <span className="text-lg ml-2 text-white/80">kg</span>
               </div>
               <p className="text-white/80 text-xs mt-1">骨格筋量</p>
@@ -847,29 +945,19 @@ export default function Inbody() {
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">{recentAverage.basalMetabolicRate || '-'}</span>
+                <span className="text-3xl font-bold">{stats.latest.basal_metabolic_rate || '-'}</span>
                 <span className="text-lg ml-2 text-white/80">kcal</span>
               </div>
               <p className="text-white/80 text-xs mt-1">基礎代謝量</p>
             </div>
             <div>
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">{recentAverage.inbodyScore || '-'}</span>
+                <span className="text-3xl font-bold">{stats.latest.inbody_score || '-'}</span>
                 <span className="text-lg ml-2 text-white/80">点</span>
               </div>
               <p className="text-white/80 text-xs mt-1">InBody点数</p>
             </div>
           </div>
-          {stats.latest && (
-            <div className="mt-4 pt-4 border-t border-white/20">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">最新記録（{format(new Date(stats.latest.date), 'M/d')}）</span>
-                <span className="text-white/90">
-                  体重: {stats.latest.weight}kg / 体脂肪率: {stats.latest.body_fat_percentage || '-'}%
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -899,6 +987,26 @@ export default function Inbody() {
           <Chart
             datasets={prepareMuscleChartData().datasets}
             labels={prepareMuscleChartData().labels}
+          />
+        </Card>
+      )}
+
+      {/* 部位別筋肉量グラフ */}
+      {filteredData.length > 0 && (
+        <Card title="部位別筋肉量推移">
+          <Chart
+            datasets={prepareBodyPartMuscleChartData().datasets}
+            labels={prepareBodyPartMuscleChartData().labels}
+          />
+        </Card>
+      )}
+
+      {/* 部位別体脂肪量グラフ */}
+      {filteredData.length > 0 && (
+        <Card title="部位別体脂肪量推移">
+          <Chart
+            datasets={prepareBodyPartFatChartData().datasets}
+            labels={prepareBodyPartFatChartData().labels}
           />
         </Card>
       )}
