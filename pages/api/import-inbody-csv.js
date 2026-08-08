@@ -1,7 +1,5 @@
 // pages/api/import-inbody-csv.js
 import { addInbodyData } from '../../lib/db'
-import fs from 'fs'
-import path from 'path'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,13 +7,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const csvPath = path.join(process.cwd(), 'InBody-20260806.csv')
+    // リクエストボディからCSVテキストを取得
+    const { csvContent } = req.body
     
-    if (!fs.existsSync(csvPath)) {
-      return res.status(404).json({ error: 'CSVファイルが見つかりません' })
+    if (!csvContent) {
+      return res.status(400).json({ error: 'CSVデータが送信されていません' })
     }
-
-    const csvContent = fs.readFileSync(csvPath, 'utf-8')
     const lines = csvContent.split('\n').filter(line => line.trim())
     
     if (lines.length < 2) {

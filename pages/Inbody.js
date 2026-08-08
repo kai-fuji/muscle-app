@@ -152,12 +152,15 @@ export default function Inbody() {
     })
   }
 
-  const handleImportCSV = async () => {
-    if (!confirm('CSVファイルからInBodyデータをインポートしますか？')) return
-    
+  const handleImportCSV = async (file) => {
     try {
+      // ファイルをテキストとして読み込む
+      const csvContent = await file.text()
+      
       const response = await fetch('/api/import-inbody-csv', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvContent })
       })
       
       if (response.ok) {
@@ -172,6 +175,31 @@ export default function Inbody() {
       console.error('Error importing CSV:', error)
       alert('インポートに失敗しました')
     }
+  }
+
+  // ファイル選択ハンドラー
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (file && file.name.endsWith('.csv')) {
+      handleImportCSV(file)
+    } else {
+      alert('CSVファイルを選択してください')
+    }
+  }
+
+  // ドラッグ&ドロップハンドラー
+  const handleDrop = (e) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file && file.name.endsWith('.csv')) {
+      handleImportCSV(file)
+    } else {
+      alert('CSVファイルをドロップしてください')
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
   }
 
   // 期間フィルター処理
@@ -482,12 +510,21 @@ export default function Inbody() {
         <h2 className="text-2xl font-bold text-gray-100"><span className="inline-flex items-center"><BodyDataIcon size={28} className="text-gray-100 mr-2" />InBodyデータ</span></h2>
         <div className="flex gap-3">
           {data.length === 0 && (
-            <button
-              onClick={handleImportCSV}
-              className="border-2 border-green-500 text-green-400 hover:bg-green-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
-            >
-              CSVインポート
-            </button>
+            <>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="csv-upload"
+              />
+              <label
+                htmlFor="csv-upload"
+                className="border-2 border-green-500 text-green-400 hover:bg-green-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer"
+              >
+                CSVアップロード
+              </label>
+            </>
           )}
           <button
             onClick={() => setShowForm(!showForm)}
@@ -931,13 +968,20 @@ export default function Inbody() {
       {/* データがない場合 */}
       {data.length === 0 && !showForm && (
         <Card>
-          <div className="text-center py-12">
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            className="text-center py-12 border-4 border-dashed border-gray-600 rounded-2xl hover:border-green-500 transition-colors"
+          >
             <div className="text-6xl mb-4"><BodyDataIcon size={64} className="text-gray-400" /></div>
             <h3 className="text-xl font-bold text-gray-100 mb-2">
               まだInBodyデータがありません
             </h3>
-            <p className="text-gray-400 mb-6">
-              「+ 記録する」ボタンでInBody測定データを追加しましょう
+            <p className="text-gray-400 mb-4">
+              CSVファイルをドラッグ&ドロップでインポート
+            </p>
+            <p className="text-gray-500 text-sm mb-6">
+              または「+ 記録する」ボタンで手動入力
             </p>
           </div>
         </Card>
