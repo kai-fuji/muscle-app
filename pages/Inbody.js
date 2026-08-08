@@ -8,14 +8,28 @@ import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIc
 
 export default function Inbody() {
   const [data, setData] = useState([])
-  const [nutritionData, setNutritionData] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDate, setEditingDate] = useState(null)
   const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     weight: '',
-    body_fat_percentage: ''
+    body_fat_percentage: '',
+    skeletal_muscle_mass: '',
+    muscle_mass: '',
+    body_fat_mass: '',
+    basal_metabolic_rate: '',
+    inbody_score: '',
+    right_arm_muscle: '',
+    left_arm_muscle: '',
+    trunk_muscle: '',
+    right_leg_muscle: '',
+    left_leg_muscle: '',
+    right_arm_fat: '',
+    left_arm_fat: '',
+    trunk_fat: '',
+    right_leg_fat: '',
+    left_leg_fat: ''
   })
 
   useEffect(() => {
@@ -119,8 +133,45 @@ export default function Inbody() {
     setFormData({
       date: format(new Date(), 'yyyy-MM-dd'),
       weight: '',
-      body_fat_percentage: ''
+      body_fat_percentage: '',
+      skeletal_muscle_mass: '',
+      muscle_mass: '',
+      body_fat_mass: '',
+      basal_metabolic_rate: '',
+      inbody_score: '',
+      right_arm_muscle: '',
+      left_arm_muscle: '',
+      trunk_muscle: '',
+      right_leg_muscle: '',
+      left_leg_muscle: '',
+      right_arm_fat: '',
+      left_arm_fat: '',
+      trunk_fat: '',
+      right_leg_fat: '',
+      left_leg_fat: ''
     })
+  }
+
+  const handleImportCSV = async () => {
+    if (!confirm('CSVファイルからInBodyデータをインポートしますか？')) return
+    
+    try {
+      const response = await fetch('/api/import-inbody-csv', {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        alert(`${result.count}件のデータをインポートしました`)
+        fetchData()
+      } else {
+        const error = await response.json()
+        alert(`エラー: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error importing CSV:', error)
+      alert('インポートに失敗しました')
+    }
   }
 
   // 期間フィルター処理
@@ -429,12 +480,22 @@ export default function Inbody() {
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-100"><span className="inline-flex items-center"><BodyDataIcon size={28} className="text-gray-100 mr-2" />InBodyデータ</span></h2>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
-        >
-          {showForm ? 'キャンセル' : '+ 記録する'}
-        </button>
+        <div className="flex gap-3">
+          {data.length === 0 && (
+            <button
+              onClick={handleImportCSV}
+              className="border-2 border-green-500 text-green-400 hover:bg-green-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
+            >
+              CSVインポート
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-medium px-6 py-3 rounded-xl transition-all duration-200"
+          >
+            {showForm ? 'キャンセル' : '+ 記録する'}
+          </button>
+        </div>
       </div>
 
       {/* 期間選択 */}
@@ -797,78 +858,11 @@ export default function Inbody() {
 
       {/* 骨格筋量グラフ */}
       {filteredData.length > 0 && (
-        <Card title="体重 × カロリー推移">
+        <Card title="骨格筋量推移">
           <Chart
-            datasets={prepareWeightAndCaloriesChartData().datasets}
-            labels={prepareWeightAndCaloriesChartData().labels}
-            customOptions={{
-              scales: {
-                y: {
-                  type: 'linear',
-                  position: 'left',
-                  grid: {
-                    color: '#2C2C2E',
-                    borderDash: [5, 5],
-                  },
-                  ticks: {
-                    color: '#FF6B6B',
-                    font: {
-                      size: 12,
-                      weight: 'bold',
-                    },
-                    callback: function(value) {
-                      return value + ' kg'
-                    }
-                  },
-                  title: {
-                    display: true,
-                    text: '体重 (kg)',
-                    color: '#FF6B6B',
-                    font: {
-                      size: 14,
-                      weight: 'bold',
-                    }
-                  }
-                },
-                y1: {
-                  type: 'linear',
-                  position: 'right',
-                  grid: {
-                    display: false, // 右軸のグリッドは非表示
-                  },
-                  ticks: {
-                    color: '#4ECDC4',
-                    font: {
-                      size: 12,
-                      weight: 'bold',
-                    },
-                    callback: function(value) {
-                      return value + ' kcal'
-                    }
-                  },
-                  title: {
-                    display: true,
-                    text: 'カロリー (kcal)',
-                    color: '#4ECDC4',
-                    font: {
-                      size: 14,
-                      weight: 'bold',
-                    }
-                  }
-                }
-              }
-            }}
+            datasets={prepareMuscleChartData().datasets}
+            labels={prepareMuscleChartData().labels}
           />
-          <div className="mt-4 flex justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-[#FF6B6B]"></div>
-              <span className="text-gray-400">体重（左軸）</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-[#4ECDC4]"></div>
-              <span className="text-gray-400">カロリー（右軸）</span>
-            </div>
-          </div>
         </Card>
       )}
 
