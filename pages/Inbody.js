@@ -10,7 +10,7 @@ export default function Inbody() {
   const [data, setData] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingDate, setEditingDate] = useState(null)
-  const [period, setPeriod] = useState(30) // 30, 90, 180, 365日
+  const [period, setPeriod] = useState(90) // 90, 180, 365, 0(全期間)日
   const [selectedBodyPart, setSelectedBodyPart] = useState(null) // 選択された部位
   const [showMuscle, setShowMuscle] = useState(true) // true: 筋肉量, false: 体脂肪量
   const [formData, setFormData] = useState({
@@ -206,6 +206,7 @@ export default function Inbody() {
 
   // 期間フィルター処理
   const getFilteredData = (data, days) => {
+    if (days === 0) return data // 0の場合は全データを返す
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - days)
     return data.filter(d => new Date(d.date) >= cutoffDate)
@@ -589,10 +590,10 @@ export default function Inbody() {
       {/* 期間選択 */}
       <div className="flex space-x-2 mb-6">
         {[
-          { days: 30, label: '1か月' },
           { days: 90, label: '3か月' },
           { days: 180, label: '6か月' },
-          { days: 365, label: '1年' }
+          { days: 365, label: '1年' },
+          { days: 0, label: '全期間' }
         ].map(({ days, label }) => (
           <button
             key={days}
@@ -1115,7 +1116,7 @@ export default function Inbody() {
       {data.length > 0 && (
         <Card title="記録履歴">
           <div className="space-y-3">
-            {data.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10).map((entry, index) => (
+            {data.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map((entry, index) => (
               <motion.div
                 key={entry.date}
                 initial={{ opacity: 0, x: -20 }}
