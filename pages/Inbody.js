@@ -739,23 +739,23 @@ export default function Inbody() {
                   <h4 className="text-sm font-medium text-white mb-3">部位別筋肉量 (kg)</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">右腕</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.right_arm_muscle}
-                        onChange={(e) => setFormData({ ...formData, right_arm_muscle: e.target.value })}
-                        placeholder="2.5"
-                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-xs text-gray-400 mb-1">左腕</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.left_arm_muscle}
                         onChange={(e) => setFormData({ ...formData, left_arm_muscle: e.target.value })}
+                        placeholder="2.5"
+                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">右腕</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.right_arm_muscle}
+                        onChange={(e) => setFormData({ ...formData, right_arm_muscle: e.target.value })}
                         placeholder="2.5"
                         className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />
@@ -773,23 +773,23 @@ export default function Inbody() {
                     </div>
                     <div></div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">右脚</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.right_leg_muscle}
-                        onChange={(e) => setFormData({ ...formData, right_leg_muscle: e.target.value })}
-                        placeholder="9.0"
-                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-xs text-gray-400 mb-1">左脚</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.left_leg_muscle}
                         onChange={(e) => setFormData({ ...formData, left_leg_muscle: e.target.value })}
+                        placeholder="9.0"
+                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">右脚</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.right_leg_muscle}
+                        onChange={(e) => setFormData({ ...formData, right_leg_muscle: e.target.value })}
                         placeholder="9.0"
                         className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />
@@ -802,23 +802,23 @@ export default function Inbody() {
                   <h4 className="text-sm font-medium text-white mb-3">部位別体脂肪量 (kg)</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">右腕</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.right_arm_fat}
-                        onChange={(e) => setFormData({ ...formData, right_arm_fat: e.target.value })}
-                        placeholder="0.5"
-                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-xs text-gray-400 mb-1">左腕</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.left_arm_fat}
                         onChange={(e) => setFormData({ ...formData, left_arm_fat: e.target.value })}
+                        placeholder="0.5"
+                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">右腕</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.right_arm_fat}
+                        onChange={(e) => setFormData({ ...formData, right_arm_fat: e.target.value })}
                         placeholder="0.5"
                         className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />
@@ -836,23 +836,23 @@ export default function Inbody() {
                     </div>
                     <div></div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">右脚</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.right_leg_fat}
-                        onChange={(e) => setFormData({ ...formData, right_leg_fat: e.target.value })}
-                        placeholder="1.5"
-                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-xs text-gray-400 mb-1">左脚</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.left_leg_fat}
                         onChange={(e) => setFormData({ ...formData, left_leg_fat: e.target.value })}
+                        placeholder="1.5"
+                        className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">右脚</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.right_leg_fat}
+                        onChange={(e) => setFormData({ ...formData, right_leg_fat: e.target.value })}
                         placeholder="1.5"
                         className="w-full px-4 py-2 border border-gray-600 rounded-xl bg-gray-600 text-white placeholder:text-gray-400 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />

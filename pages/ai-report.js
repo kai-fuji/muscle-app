@@ -24,6 +24,14 @@ export default function AIReport() {
     protein: true,
     fat: true,
     carbs: true,
+    // InBodyデータ
+    inbodySkeletalMuscle: true,
+    inbodyMuscleMass: true,
+    inbodyFatMass: true,
+    inbodyBasalMetabolic: true,
+    inbodyScore: true,
+    inbodySegmentalMuscle: true,
+    inbodySegmentalFat: true,
     // トレーニングデータ
     exercises: [] // 選択された種目名の配列
   })
@@ -79,9 +87,10 @@ export default function AIReport() {
     }
     
     // 身体データと栄養データは従来通りAPIから取得
-    const [bodyRes, nutritionRes] = await Promise.all([
+    const [bodyRes, nutritionRes, inbodyRes] = await Promise.all([
       fetch('/api/body-data'),
-      fetch('/api/nutrition')
+      fetch('/api/nutrition'),
+      fetch('/api/Inbody')
     ])
     
     if (!bodyRes.ok || !nutritionRes.ok) {
@@ -90,6 +99,7 @@ export default function AIReport() {
     
     const bodyData = await bodyRes.json()
     const nutritionData = await nutritionRes.json()
+    const inbodyData = inbodyRes.ok ? await inbodyRes.json() : []
 
     console.log('Fetched data:', { bodyData, nutritionData, trainingData })
 
@@ -107,6 +117,7 @@ export default function AIReport() {
     const data = {
       body_data: Array.isArray(bodyData) ? filterByDate(bodyData) : [],
       nutrition_data: Array.isArray(nutritionData) ? filterByDate(nutritionData) : [],
+      inbody_data: Array.isArray(inbodyData) ? filterByDate(inbodyData) : [],
       training_data: Array.isArray(trainingData) ? filterByDate(trainingData, 'datetime') : []
     }
 
@@ -114,6 +125,7 @@ export default function AIReport() {
     console.log('Data counts:', {
       body: data.body_data.length,
       nutrition: data.nutrition_data.length,
+      inbody: data.inbody_data.length,
       training: data.training_data.length
     })
     
@@ -182,6 +194,33 @@ export default function AIReport() {
       })
     }
     
+    // InBodyデータのフィルタリング
+    if (dataSelection.inbodySkeletalMuscle || dataSelection.inbodyMuscleMass || dataSelection.inbodyFatMass || dataSelection.inbodyBasalMetabolic || dataSelection.inbodyScore || dataSelection.inbodySegmentalMuscle || dataSelection.inbodySegmentalFat) {
+      filteredData.inbody_data = data.inbody_data.map(item => {
+        const filtered = { date: item.date }
+        if (dataSelection.inbodySkeletalMuscle) filtered.skeletal_muscle_mass = item.skeletal_muscle_mass
+        if (dataSelection.inbodyMuscleMass) filtered.muscle_mass = item.muscle_mass
+        if (dataSelection.inbodyFatMass) filtered.body_fat_mass = item.body_fat_mass
+        if (dataSelection.inbodyBasalMetabolic) filtered.basal_metabolic_rate = item.basal_metabolic_rate
+        if (dataSelection.inbodyScore) filtered.inbody_score = item.inbody_score
+        if (dataSelection.inbodySegmentalMuscle) {
+          filtered.right_arm_muscle = item.right_arm_muscle
+          filtered.left_arm_muscle = item.left_arm_muscle
+          filtered.trunk_muscle = item.trunk_muscle
+          filtered.right_leg_muscle = item.right_leg_muscle
+          filtered.left_leg_muscle = item.left_leg_muscle
+        }
+        if (dataSelection.inbodySegmentalFat) {
+          filtered.right_arm_fat = item.right_arm_fat
+          filtered.left_arm_fat = item.left_arm_fat
+          filtered.trunk_fat = item.trunk_fat
+          filtered.right_leg_fat = item.right_leg_fat
+          filtered.left_leg_fat = item.left_leg_fat
+        }
+        return filtered
+      })
+    }
+
     // トレーニングデータのフィルタリング（選択された種目のみ）
     if (dataSelection.exercises.length > 0) {
       filteredData.training_data = data.training_data.filter(item => 
@@ -203,6 +242,7 @@ export default function AIReport() {
    - 体重の増加ペースは適切か？（目標：週0.25〜0.5kg）
    - 体脂肪率の変化は許容範囲か？（目標：±1%以内）
    - 除脂肪体重（筋肉量）は増えているか？
+   - InBodyデータ（骨格筋量・部位別筋肉量・体脂肪量）の推移はどうか？
 
 2. **栄養摂取の評価**
    - カロリー摂取量は適切か？
@@ -320,6 +360,7 @@ ${JSON.stringify(filteredData, null, 2)}
   const stats = allData ? {
     bodyRecords: allData.body_data.length,
     nutritionRecords: allData.nutrition_data.length,
+    inbodyRecords: allData.inbody_data.length,
     trainingRecords: allData.training_data.length
   } : null
 
@@ -407,7 +448,7 @@ ${JSON.stringify(filteredData, null, 2)}
 
       {/* データサマリー */}
       {!loading && !error && stats && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><BodyDataIcon size={24} className="text-gray-400" /></div>
             <div className="text-2xl font-bold text-white">{stats.bodyRecords}</div>
@@ -417,6 +458,11 @@ ${JSON.stringify(filteredData, null, 2)}
             <div className="text-2xl mb-2"><NutritionIcon size={24} className="text-gray-400" /></div>
             <div className="text-2xl font-bold text-white">{stats.nutritionRecords}</div>
             <div className="text-sm text-gray-400">栄養データ</div>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+            <div className="text-2xl mb-2"><DumbbellIcon size={24} className="text-gray-400" /></div>
+            <div className="text-2xl font-bold text-white">{stats.inbodyRecords}</div>
+            <div className="text-sm text-gray-400">InBody</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <div className="text-2xl mb-2"><TrainingIcon size={24} className="text-gray-400" /></div>
@@ -500,6 +546,79 @@ ${JSON.stringify(filteredData, null, 2)}
                     className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
                   />
                   <span className="text-gray-300">糖質</span>
+                </label>
+              </div>
+            </div>
+
+            {/* InBodyデータ */}
+            <div>
+              <h4 className="font-bold text-gray-100 mb-3 flex items-center">
+                <BodyDataIcon size={18} className="mr-2 text-cyan-400" />
+                InBodyデータ
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodySkeletalMuscle}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodySkeletalMuscle: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">骨格筋量</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodyMuscleMass}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodyMuscleMass: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">筋肉量</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodyFatMass}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodyFatMass: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">体脂肪量</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodyBasalMetabolic}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodyBasalMetabolic: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">基礎代謝量</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodyScore}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodyScore: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">InBody点数</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodySegmentalMuscle}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodySegmentalMuscle: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">部位別筋肉量</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dataSelection.inbodySegmentalFat}
+                    onChange={(e) => setDataSelection(prev => ({ ...prev, inbodySegmentalFat: e.target.checked }))}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="text-gray-300">部位別体脂肪量</span>
                 </label>
               </div>
             </div>
@@ -611,7 +730,7 @@ ${JSON.stringify(filteredData, null, 2)}
       )}
 
       {/* データがない場合 */}
-      {!loading && !error && stats && (stats.bodyRecords === 0 && stats.nutritionRecords === 0 && stats.trainingRecords === 0) && (
+      {!loading && !error && stats && (stats.bodyRecords === 0 && stats.nutritionRecords === 0 && stats.inbodyRecords === 0 && stats.trainingRecords === 0) && (
         <Card>
           <div className="text-center py-12">
             <div className="text-6xl mb-4"><AIIcon size={64} className="text-gray-400" /></div>
