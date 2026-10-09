@@ -356,6 +356,32 @@ ${JSON.stringify(filteredData, null, 2)}
       exercises: []
     }))
   }
+  
+  const selectAllInbody = () => {
+    setDataSelection(prev => ({
+      ...prev,
+      inbodySkeletalMuscle: true,
+      inbodyMuscleMass: true,
+      inbodyFatMass: true,
+      inbodyBasalMetabolic: true,
+      inbodyScore: true,
+      inbodySegmentalMuscle: true,
+      inbodySegmentalFat: true
+    }))
+  }
+  
+  const deselectAllInbody = () => {
+    setDataSelection(prev => ({
+      ...prev,
+      inbodySkeletalMuscle: false,
+      inbodyMuscleMass: false,
+      inbodyFatMass: false,
+      inbodyBasalMetabolic: false,
+      inbodyScore: false,
+      inbodySegmentalMuscle: false,
+      inbodySegmentalFat: false
+    }))
+  }
 
   const stats = allData ? {
     bodyRecords: allData.body_data.length,
@@ -552,10 +578,26 @@ ${JSON.stringify(filteredData, null, 2)}
 
             {/* InBodyデータ */}
             <div>
-              <h4 className="font-bold text-gray-100 mb-3 flex items-center">
-                <BodyDataIcon size={18} className="mr-2 text-cyan-400" />
-                InBodyデータ
-              </h4>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-bold text-gray-100 flex items-center">
+                  <BodyDataIcon size={18} className="mr-2 text-cyan-400" />
+                  InBodyデータ
+                </h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllInbody}
+                    className="text-xs px-3 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all"
+                  >
+                    全選択
+                  </button>
+                  <button
+                    onClick={deselectAllInbody}
+                    className="text-xs px-3 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all"
+                  >
+                    全解除
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
