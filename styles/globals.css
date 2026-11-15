@@ -143,6 +143,15 @@
   --chart-rose: #F38181;
   --chart-mint: #95E1D3;
   --ring-track: #2C2C2E;
+
+  /* SNS投稿ページ用 */
+  --sns-accent: #66E0FF;
+  --sns-red: #EF4444;
+  --sns-gray: #6B7280;
+  --sns-text: #FFFFFF;
+  --sns-divider: #1F2937;
+  --sns-muted: #4B5563;
+  --sns-footer: #1F2937;
 }
 
 /* ========== ライトテーマ (クリーム×テラコッタ) ==========
@@ -264,6 +273,15 @@
   --chart-rose: #C62828;
   --chart-mint: #3E7C4F;
   --ring-track: #E7DFD2;
+
+  /* SNS投稿ページ用 */
+  --sns-accent: #FF9500;
+  --sns-red: #C62828;
+  --sns-gray: #8A7F73;
+  --sns-text: #3B2F27;
+  --sns-divider: #D8CFC0;
+  --sns-muted: #8A7F73;
+  --sns-footer: #B8AC9C;
 }
 
 /* ========== ライトテーマ時の個別ユーティリティ調整 ========== */
@@ -315,14 +333,11 @@
 /* 下部ナビの影をライト向けにソフトに */
 [data-theme="light"] .bottom-nav-dark { box-shadow: 0 -4px 12px rgba(59, 47, 39, 0.08); }
 
-/* SNS投稿ページ (training-summary) は黒背景の投稿画像デザインのため、ライトでも黒のまま */
-[data-theme="light"] .min-h-screen.bg-black.text-white .text-white { color: #FFFFFF; }
-[data-theme="light"] .min-h-screen.bg-black.text-white .text-white\/80 { color: rgba(255, 255, 255, 0.8); }
-[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-400 { color: #9CA3AF; }
-[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-600 { color: #4B5563; }
-[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-800 { color: #1F2937; }
-[data-theme="light"] .min-h-screen.bg-black.text-white .bg-gray-800 { background-color: #1F2937; }
-[data-theme="light"] .min-h-screen.bg-black.text-white .border-gray-800 { border-color: #374151; }
+/* SNS投稿ページ (training-summary) はライトテーマに追従 */
+/* 投稿写真: dark は黒に馴染ませるため暗く表示、light は非表示 */
+.sns-photo { filter: brightness(0.4) contrast(1.1); }
+[data-theme="light"] .sns-photo,
+[data-theme="light"] .sns-photo-wrap { display: none; }
 
 /* ========== ベーススタイル ========== */
 * {

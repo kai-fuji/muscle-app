@@ -228,7 +228,7 @@ export default function TrainingSummary() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
@@ -236,13 +236,13 @@ export default function TrainingSummary() {
 
   if (todayData.length === 0) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-bg-primary text-white flex flex-col items-center justify-center">
         <div className="flex items-center gap-2 mb-4">
           <button onClick={() => shiftDate(-1)} aria-label="前日" className="text-gray-500 hover:text-gray-300 transition-colors">
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <span className="text-sm">{format(selectedDateObj, 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}</span>
-          <button onClick={() => shiftDate(1)} disabled={isToday} className={`transition-colors ${isToday ? 'text-gray-800 cursor-default' : 'text-gray-500 hover:text-gray-300'}`}>
+          <button onClick={() => shiftDate(1)} disabled={isToday} className={`text-gray-500 transition-opacity ${isToday ? 'opacity-40 cursor-default' : 'hover:opacity-70'}`}>
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
@@ -252,18 +252,18 @@ export default function TrainingSummary() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
+    <div className="min-h-screen bg-bg-primary text-white" style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
       <div style={{ maxWidth: '540px', margin: '0 auto', width: '100%', minWidth: '320px' }}>
       {/* ヘッダー */}
       <div className="relative mb-0" style={{ overflow: 'visible', paddingBottom: '8px' }}>
         <div className="flex justify-end">
           {/* 右上の画像（通常フロー） */}
-          <div style={{ width: '180px', maxWidth: '45%' }}>
+          <div className="sns-photo-wrap" style={{ width: '180px', maxWidth: '45%' }}>
             <img 
               src="/picture/man.png" 
               alt="Fitness" 
-              className="w-full h-auto"
-              style={{ filter: 'brightness(0.4) contrast(1.1)', display: 'block', maxHeight: '280px' }}
+              className="w-full h-auto sns-photo"
+              style={{ display: 'block', maxHeight: '280px' }}
             />
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function TrainingSummary() {
         {/* 左側のヘッダーテキスト（absolute で画像に重ねる） */}
         <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
           <div className="flex items-center gap-1 mb-2">
-            <button onClick={() => shiftDate(-1)} aria-label="前日" className="text-gray-600 hover:text-gray-400 transition-colors leading-none">
+            <button onClick={() => shiftDate(-1)} aria-label="前日" className="transition-opacity hover:opacity-70 leading-none" style={{ color: 'var(--sns-muted, #4B5563)' }}>
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <button
@@ -282,8 +282,8 @@ export default function TrainingSummary() {
                   dateInputRef.current.focus()
                 }
               }}
-              className="text-[9px] text-gray-600 hover:text-gray-400 transition-colors tracking-[0.15em]"
-              style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+              className="text-[9px] transition-opacity hover:opacity-70 tracking-[0.15em]"
+              style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500, color: 'var(--sns-muted, #4B5563)' }}>
               {format(selectedDateObj, 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
             </button>
             <input
@@ -295,7 +295,7 @@ export default function TrainingSummary() {
               style={{ position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
               tabIndex={-1}
             />
-            <button onClick={() => shiftDate(1)} disabled={isToday} aria-label="翌日" className={`transition-colors leading-none ${isToday ? 'text-gray-800 cursor-default' : 'text-gray-600 hover:text-gray-400'}`}>
+            <button onClick={() => shiftDate(1)} disabled={isToday} aria-label="翌日" className={`transition-opacity leading-none ${isToday ? 'opacity-40 cursor-default' : 'hover:opacity-70'}`} style={{ color: 'var(--sns-muted, #4B5563)' }}>
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
@@ -316,17 +316,17 @@ export default function TrainingSummary() {
                 {/* 左側: 種目情報 */}
                 <div className="flex-shrink-0" style={{ width: 'clamp(100px, 28%, 140px)', minWidth: '100px' }}>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="text-[10px] font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif", color: '#66E0FF' }}>
+                    <div className="text-[10px] font-bold tracking-wider" style={{ fontFamily: "'Inter', sans-serif", color: 'var(--sns-accent, #66E0FF)' }}>
                       {String(index + 1).padStart(2, '0')}
                     </div>
-                    <div className="text-[10px] font-medium" style={{ fontFamily: "'Noto Sans JP', sans-serif", color: '#9CA3AF' }}>
+                    <div className="text-[10px] font-medium" style={{ fontFamily: "'Noto Sans JP', sans-serif", color: 'var(--chart-gray, #9CA3AF)' }}>
                       {getExercisePart(item.exercise)}
                     </div>
                   </div>
                   <h3 className="text-xs sm:text-sm font-black uppercase leading-tight mb-1" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.03em', fontWeight: 900 }}>
                     {getExerciseNameInEnglish(item.exercise)}
                   </h3>
-                  <p className="text-[10px] text-gray-600" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400 }}>{item.exercise}</p>
+                  <p className="text-[10px]" style={{ fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 400, color: 'var(--sns-muted, #4B5563)' }}>{item.exercise}</p>
                 </div>
 
                 {/* 中央: セット情報 */}
@@ -337,7 +337,7 @@ export default function TrainingSummary() {
                       <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
                         SET {setIndex + 1}
                       </div>
-                      <div className="text-[28px] sm:text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
+                      <div className="text-[28px] sm:text-[38px] font-black leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: 'var(--sns-accent, #66E0FF)', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>
                         {set.weight}
                         <span className="text-[8px] sm:text-[10px] text-white ml-0.5 sm:ml-1" style={{ fontWeight: 400, transform: 'scaleY(0.87)' }}>kg</span>
                       </div>
@@ -350,7 +350,7 @@ export default function TrainingSummary() {
                       </div>
                     </div>
                     {setIndex < item.sets.length - 1 && (
-                      <div className="w-px bg-gray-800 mx-0.5 sm:mx-1" style={{ height: '75px', marginTop: '18px' }}></div>
+                      <div className="w-px mx-0.5 sm:mx-1" style={{ height: '75px', marginTop: '18px', background: 'var(--sns-divider, #1F2937)' }}></div>
                     )}
                     </>
                   ))}
@@ -361,27 +361,27 @@ export default function TrainingSummary() {
                   <div className="text-[8px] sm:text-[9px] mb-1 font-semibold tracking-wide text-center text-white" style={{ fontFamily: "'Inter', sans-serif" }}>前回比</div>
                   {diff.isNew ? (
                     <div className="flex flex-col items-center justify-center" style={{ minHeight: '60px' }}>
-                      <div className="text-[10px] sm:text-xs font-bold text-center leading-tight" style={{ fontFamily: "'Inter', sans-serif", color: '#10B981' }}>New<br/>menu</div>
+                      <div className="text-[10px] sm:text-xs font-bold text-center leading-tight" style={{ fontFamily: "'Inter', sans-serif", color: 'var(--chart-green, #10B981)' }}>New<br/>menu</div>
                     </div>
                   ) : parseFloat(diff.value) > 0 ? (
                     <div className="flex flex-col items-center">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" style={{ stroke: 'var(--sns-text, #FFFFFF)' }} strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
                       </svg>
-                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#66E0FF', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.value}</div>
+                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: 'var(--sns-accent, #66E0FF)', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>+{diff.value}</div>
                       <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
                   ) : parseFloat(diff.value) < 0 ? (
                     <div className="flex flex-col items-center">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" stroke="#FFFFFF" strokeWidth="3" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" fill="none" style={{ stroke: 'var(--sns-text, #FFFFFF)' }} strokeWidth="3" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 7L7 17M7 17H17M7 17V7" />
                       </svg>
-                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#EF4444', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.value}</div>
+                      <div className="text-lg sm:text-2xl font-black leading-none" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: 'var(--sns-red, #EF4444)', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>{diff.value}</div>
                       <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <div className="text-lg sm:text-2xl font-black leading-none mt-4 sm:mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: '#6B7280', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
+                      <div className="text-lg sm:text-2xl font-black leading-none mt-4 sm:mt-6" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: 'var(--sns-gray, #6B7280)', transform: 'scaleY(1.15)', transformOrigin: 'bottom' }}>±0</div>
                       <div className="text-[8px] sm:text-[9px] mt-0.5 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{diff.unit}</div>
                     </div>
                   )}
@@ -394,7 +394,7 @@ export default function TrainingSummary() {
 
       {/* フッター */}
       <div className="mt-6 pb-6 text-center">
-        <div className="text-[9px] text-gray-800 tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400 }}>
+        <div className="text-[9px] tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, color: 'var(--sns-footer, #1F2937)' }}>
           accout : k_fit_0730
         </div>
       </div>
