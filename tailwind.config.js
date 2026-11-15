@@ -86,10 +86,14 @@ module.exports = {
           300: 'rgb(var(--tc-cyan-300) / <alpha-value>)',
           400: 'rgb(var(--tc-cyan-400) / <alpha-value>)',
           500: 'rgb(var(--tc-cyan-500) / <alpha-value>)',
+          600: 'rgb(var(--tc-cyan-600) / <alpha-value>)',
         },
         blue: {
           300: 'rgb(var(--tc-blue-300) / <alpha-value>)',
           400: 'rgb(var(--tc-blue-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-blue-500) / <alpha-value>)',
+          600: 'rgb(var(--tc-blue-600) / <alpha-value>)',
+          700: 'rgb(var(--tc-blue-700) / <alpha-value>)',
           900: 'rgb(var(--tc-blue-900) / <alpha-value>)',
         },
         red: {
