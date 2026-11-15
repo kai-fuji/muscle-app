@@ -1,17 +1,48 @@
 // pages/training-summary.js
-import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { useState, useEffect, useRef } from 'react'
+import { format, addDays } from 'date-fns'
+import { ja, enUS } from 'date-fns/locale'
 import { getAllCachedData } from '../lib/cacheManager'
 
 export default function TrainingSummary() {
   const [todayData, setTodayData] = useState([])
   const [previousData, setPreviousData] = useState({})
   const [loading, setLoading] = useState(true)
+  const [allRecords, setAllRecords] = useState([])
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const dateInputRef = useRef(null)
 
   useEffect(() => {
     fetchTodayTraining()
   }, [])
+
+  // 選択中の日付(既定=本日)のデータと前回比を集計
+  useEffect(() => {
+    const dayTraining = allRecords.filter(item => item.date === selectedDate)
+
+    const groupedData = {}
+    dayTraining.forEach(item => {
+      if (!groupedData[item.exercise]) {
+        groupedData[item.exercise] = item
+      }
+    })
+
+    setTodayData(Object.values(groupedData))
+
+    // 各種目の、選択日より前の直近データを前回比として取得
+    const prevData = {}
+    Object.keys(groupedData).forEach(exercise => {
+      const exerciseHistory = allRecords
+        .filter(item => item.exercise === exercise && item.date < selectedDate)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+
+      if (exerciseHistory.length > 0) {
+        prevData[exercise] = exerciseHistory[0]
+      }
+    })
+
+    setPreviousData(prevData)
+  }, [selectedDate, allRecords])
 
   const fetchTodayTraining = async () => {
     try {
@@ -58,35 +89,8 @@ export default function TrainingSummary() {
         }))
       }
       
-      // 本日のデータを抽出
-      const today = format(new Date(), 'yyyy-MM-dd')
-      const todayTraining = allData.filter(item => item.date === today)
-      
-      console.log(`[Training Summary] Today's data count: ${todayTraining.length}`)
-      
-      // 種目ごとにグループ化
-      const groupedData = {}
-      todayTraining.forEach(item => {
-        if (!groupedData[item.exercise]) {
-          groupedData[item.exercise] = item
-        }
-      })
-      
-      setTodayData(Object.values(groupedData))
-      
-      // 各種目の前回データを取得
-      const prevData = {}
-      Object.keys(groupedData).forEach(exercise => {
-        const exerciseHistory = allData
-          .filter(item => item.exercise === exercise && item.date !== today)
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-        
-        if (exerciseHistory.length > 0) {
-          prevData[exercise] = exerciseHistory[0]
-        }
-      })
-      
-      setPreviousData(prevData)
+      // 全レコードを保持し、表示は選択中の日付(既定=本日)で集計する
+      setAllRecords(allData)
       setLoading(false)
       console.log('[Training Summary] Data loaded successfully')
     } catch (error) {
@@ -189,6 +193,12 @@ export default function TrainingSummary() {
     }
   }
 
+  const isToday = selectedDate === format(new Date(), 'yyyy-MM-dd')
+  const selectedDateObj = new Date(selectedDate + 'T00:00:00')
+  const shiftDate = (days) => {
+    setSelectedDate(format(addDays(selectedDateObj, days), 'yyyy-MM-dd'))
+  }
+
   const getDiffIndicator = (diff) => {
     if (diff > 0) {
       return (
@@ -226,8 +236,17 @@ export default function TrainingSummary() {
 
   if (todayData.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">本日のトレーニングデータがありません</div>
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => shiftDate(-1)} aria-label="前日" className="text-gray-500 hover:text-gray-300 transition-colors">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <span className="text-sm">{format(selectedDateObj, 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}</span>
+          <button onClick={() => shiftDate(1)} disabled={isToday} className={`transition-colors ${isToday ? 'text-gray-800 cursor-default' : 'text-gray-500 hover:text-gray-300'}`}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+        <div className="text-white text-xl">この日のトレーニングデータがありません</div>
       </div>
     )
   }
@@ -251,11 +270,37 @@ export default function TrainingSummary() {
         
         {/* 左側のヘッダーテキスト（absolute で画像に重ねる） */}
         <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
-          <div className="text-[9px] text-gray-600 mb-2 tracking-[0.15em]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-            {format(new Date(), 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
+          <div className="flex items-center gap-1 mb-2">
+            <button onClick={() => shiftDate(-1)} aria-label="前日" className="text-gray-600 hover:text-gray-400 transition-colors leading-none">
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button
+              onClick={() => {
+                if (dateInputRef.current && typeof dateInputRef.current.showPicker === 'function') {
+                  try { dateInputRef.current.showPicker() } catch (e) { dateInputRef.current.focus() }
+                } else if (dateInputRef.current) {
+                  dateInputRef.current.focus()
+                }
+              }}
+              className="text-[9px] text-gray-600 hover:text-gray-400 transition-colors tracking-[0.15em]"
+              style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+              {format(selectedDateObj, 'yyyy.MM.dd E', { locale: ja }).toUpperCase()}
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={selectedDate}
+              max={format(new Date(), 'yyyy-MM-dd')}
+              onChange={(e) => { if (e.target.value) setSelectedDate(e.target.value) }}
+              style={{ position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
+              tabIndex={-1}
+            />
+            <button onClick={() => shiftDate(1)} disabled={isToday} aria-label="翌日" className={`transition-colors leading-none ${isToday ? 'text-gray-800 cursor-default' : 'text-gray-600 hover:text-gray-400'}`}>
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
           <h1 className="text-[60px] sm:text-[80px] leading-[0.8] tracking-[-0.02em]" style={{ fontFamily: "'Bebas Neue', sans-serif", fontWeight: 400 }}>
-            TODAY'S<br />MENU
+            {isToday ? <>TODAY'S<br />MENU</> : <>{format(selectedDateObj, 'MMM d', { locale: enUS }).toUpperCase()}<br />MENU</>}
           </h1>
         </div>
       </div>
