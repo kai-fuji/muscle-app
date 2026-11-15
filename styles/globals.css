@@ -341,6 +341,21 @@
 /* 写真を隠すとヘッダーの高さがゼロになりタイトルがリストに重なるため、ライトではタイトルを通常フローに戻す */
 [data-theme="light"] .sns-header-text { position: static; }
 
+/* トレーニングページ (ライト): shoppinglist の色合いに合わせる */
+/* カレンダーの筋トレした日: 柔らかいテラコッタ */
+[data-theme="light"] .training-page .bg-blue-600\/30 { background-color: #E3B096; }
+[data-theme="light"] .training-page .hover\:bg-blue-600\/50:hover { background-color: #D9A383; }
+/* 種目カード・フォームのセット行: 白ベースに、中のチップ/入力はクリーム */
+[data-theme="light"] .training-page .bg-slate-700 { background-color: #FFFFFF; }
+[data-theme="light"] .training-page .bg-slate-900 { background-color: #F6F1E8; }
+/* タイマー FAB / 展開パネル: 黒グラデーション → 白カード */
+[data-theme="light"] .training-page .timer-fab,
+[data-theme="light"] .training-page .timer-panel {
+  background: #FFFFFF;
+  border-color: #E7DFD2;
+  box-shadow: 0 8px 24px rgba(59, 47, 39, 0.18);
+}
+
 /* ========== ベーススタイル ========== */
 * {
   margin: 0;

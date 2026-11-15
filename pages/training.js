@@ -1,1440 +1,880 @@
-// pages/training.js
-import { useState, useEffect, useRef } from 'react'
-import { getCachedMonthData, getAllCachedData, cacheMonthData } from '../lib/cacheManager'
-import Card from '../components/Card'
-import { motion, AnimatePresence } from 'framer-motion'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, subDays } from 'date-fns'
-import { ja } from 'date-fns/locale'
-import { AIIcon, BodyDataIcon, CaloriesIcon, DashboardIcon, DataIcon, DumbbellIcon, NutritionIcon, TimerIcon, TrainingIcon, TrendIcon, WorkoutIcon, PlayIcon, PauseIcon, RotateIcon, MusicIcon, StarIcon, CalendarIcon, BarChartIcon, ListIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from '../components/Icons'
+/* ========== ダークテーマ - フィットネストラッキングアプリ ========== */
+/* 添付画像のデザインを完全再現 */
 
-export default function Training() {
-  const [data, setData] = useState([])
-  const [exercises, setExercises] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [editingDatetime, setEditingDatetime] = useState(null)
-  const [formData, setFormData] = useState({
-    date: format(new Date(), 'yyyy-MM-dd'),
-    datetime: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-    exercises: [{
-      exercise: '',
-      sets: [{ weight: '', reps: '', negative: 3 }],
-      interval_seconds: 60,
-      previousHistory: null
-    }]
-  })
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [view, setView] = useState('calendar')
-  const [selectedExercise, setSelectedExercise] = useState(null)
-  const [graphPeriod, setGraphPeriod] = useState('1month')
-
-  const [timerWidgetExpanded, setTimerWidgetExpanded] = useState(false)
-  const [timerMode, setTimerMode] = useState('interval')
+/* ========== カラーパレット（画像から抽出） ========== */
+:root {
+  /* 背景色 */
+  --bg-primary: #000000;           /* 純黒背景 */
+  --bg-secondary: #1C1C1E;         /* ダークグレー背景 */
+  --bg-card: #2C2C2E;              /* カード背景 */
+  --bg-card-elevated: #3A3A3C;     /* 浮き上がったカード */
   
-  const [intervalTime, setIntervalTime] = useState(60)
-  const [intervalRemaining, setIntervalRemaining] = useState(60)
-  const [intervalRunning, setIntervalRunning] = useState(false)
+  /* テキストカラー */
+  --text-primary: #FFFFFF;         /* メインテキスト（白） */
+  --text-secondary: #8E8E93;       /* セカンダリテキスト（グレー） */
+  --text-tertiary: #636366;        /* 薄いグレー */
   
-  const [tempoInterval, setTempoInterval] = useState(1)
-  const [tempoRunning, setTempoRunning] = useState(false)
-  const [tempoCount, setTempoCount] = useState(0)
+  /* アクセントカラー - シアン/ターコイズ（Steps用） */
+  --accent-cyan: #00D9FF;
+  --accent-cyan-light: #4DD0E1;
+  --accent-cyan-glow: rgba(0, 217, 255, 0.3);
   
-  const audioRef = useRef(null)
-  const audioContextRef = useRef(null)
-  const wakeLockRef = useRef(null)
-
-  // 初回ロードのみ
-  useEffect(() => {
-    fetchData()
-    fetchExercises()
-    
-    // クリーンアップ：Wake Lockを解放
-    return () => {
-      if (wakeLockRef.current) {
-        wakeLockRef.current.release()
-        wakeLockRef.current = null
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-        audioContextRef.current = null
-      }
-    }
-  }, [])
-
-  // カレンダービューの月変更時のみデータ再取得
-  useEffect(() => {
-    if (view === 'calendar') {
-      fetchData()
-    }
-  }, [currentMonth, view])
-
-  // グラフ・リストビューに切り替えた時のみデータ再取得
-  useEffect(() => {
-    if (view === 'graph' || view === 'list') {
-      fetchData()
-    }
-  }, [view])
-
-  useEffect(() => {
-    if (!intervalRunning || timerMode !== 'interval') return
-
-    if (intervalRemaining <= 0) {
-      playSound()
-      setIntervalRunning(false)
-      setIntervalRemaining(intervalTime)
-      return
-    }
-
-    const timer = setInterval(() => {
-      setIntervalRemaining(prev => {
-        if (prev <= 1) {
-          playSound()
-          setIntervalRunning(false)
-          return intervalTime
-        }
-        if (prev <= 4) playBeep()
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [intervalRunning, intervalRemaining, intervalTime, timerMode])
-
-  useEffect(() => {
-    if (!tempoRunning || timerMode !== 'tempo') return
-
-    const timer = setInterval(() => {
-      playBeep()
-      setTempoCount(prev => prev + 1)
-    }, tempoInterval * 1000)
-
-    return () => clearInterval(timer)
-  }, [tempoRunning, tempoInterval, timerMode])
-
-  const playSound = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e))
-    }
-  }
-
-  const playBeep = async () => {
-    try {
-      // AudioContextを再利用または作成
-      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
-      }
-      
-      const context = audioContextRef.current
-      
-      // AudioContextがsuspended状態の場合は再開
-      if (context.state === 'suspended') {
-        await context.resume()
-      }
-      
-      const oscillator = context.createOscillator()
-      const gainNode = context.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(context.destination)
-      
-      oscillator.frequency.value = 800
-      gainNode.gain.value = 0.3
-      
-      oscillator.start(context.currentTime)
-      oscillator.stop(context.currentTime + 0.1)
-    } catch (error) {
-      console.error('Beep failed:', error)
-    }
-  }
-
-  const startIntervalTimer = () => {
-    setIntervalRunning(true)
-  }
-
-  const pauseIntervalTimer = () => {
-    setIntervalRunning(false)
-  }
-
-  const resetIntervalTimer = () => {
-    setIntervalRunning(false)
-    setIntervalRemaining(intervalTime)
-  }
-
-  const startTempoTimer = async () => {
-    // Wake Lockを取得（スマホの画面がオフにならないように）
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLockRef.current = await navigator.wakeLock.request('screen')
-        console.log('Wake Lock acquired')
-      }
-    } catch (err) {
-      console.error('Wake Lock failed:', err)
-    }
-    
-    playBeep()
-    setTempoRunning(true)
-    setTempoCount(0)
-  }
-
-  const pauseTempoTimer = () => {
-    setTempoRunning(false)
-    // Wake Lockを解放
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release()
-      wakeLockRef.current = null
-      console.log('Wake Lock released')
-    }
-  }
-
-  const resetTempoTimer = () => {
-    setTempoRunning(false)
-    setTempoCount(0)
-    // Wake Lockを解放
-    if (wakeLockRef.current) {
-      wakeLockRef.current.release()
-      wakeLockRef.current = null
-      console.log('Wake Lock released')
-    }
-  }
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const fetchData = async (forceRefresh = false) => {
-    try {
-      let cacheKey = ''
-      let url = '/api/training'
-      
-      if (view === 'calendar') {
-
-        // カレンダービュー：月単位でキャッシュ
-        const year = format(currentMonth, 'yyyy')
-        const month = format(currentMonth, 'M')
-        cacheKey = `${year}-${month.padStart(2, '0')}`
-        url = `/api/training?year=${year}&month=${month}`
-        console.log(`[Training Cache] Calendar view - checking cache for ${cacheKey}`)
-
-      } else {
-        // グラフ・リストビュー：既存の全ての月のキャッシュを統合
-        console.log('[Training Cache] Graph/List view - loading all cached months')
-        
-        try {
-          const cachedData = await getAllCachedData('training')
-          
-          if (cachedData && cachedData.length > 0) {
-            console.log(`[Training Cache] ✓ Loaded ${cachedData.length} records from all cached months`)
-            const formattedData = cachedData.map(item => ({
-              ...item,
-              date: item.datetime ? item.datetime.split('T')[0] : item.date,
-              sets: item.sets || []
-            }))
-            setData(formattedData)
-            return
-          }
-          
-          console.log('[Training Cache] No cached data found, fetching from API')
-        } catch (error) {
-          console.log('[Training Cache] getAllCachedData failed:', error)
-        }
-        
-        // キャッシュがない場合は全データをAPIから取得
-        cacheKey = 'allData'
-        console.log('[Training Cache] Falling back to API')
-      }
-
-      if (!forceRefresh) {
-        try {
-          const cachedData = await getCachedMonthData('training', cacheKey)
-          
-          if (cachedData && cachedData.length > 0) {
-            console.log(`[Training Cache] ✓ Cache HIT for ${cacheKey}: ${cachedData.length} records`)
-            const formattedData = cachedData.map(item => ({
-              ...item,
-              date: item.datetime ? item.datetime.split('T')[0] : item.date,
-              sets: item.sets || []
-            }))
-            setData(formattedData)
-            console.log(`[Training Cache] Data loaded from cache`)
-            return
-          }
-          
-          console.log(`[Training Cache] ✗ Cache MISS for ${cacheKey}`)
-        } catch (cacheError) {
-          console.log('[Training Cache] Cache check failed:', cacheError.message)
-        }
-      } else {
-        console.log('[Training Cache] Force refresh - skipping cache')
-      }
-      
-      // キャッシュにない場合、APIから取得
-      console.log(`[Training API] Fetching from ${url}`)
-      const res = await fetch(url)
-      if (!res.ok) {
-        throw new Error(`API error: ${res.status}`)
-      }
-      
-      const json = await res.json()
-      console.log(`[Training API] Fetched ${json.length} records`)
-      
-      // データを適切な形式に変換
-      const formattedData = json.map(item => ({
-        ...item,
-        date: item.datetime ? item.datetime.split('T')[0] : item.date,
-        sets: item.sets || []
-      }))
-      
-      setData(formattedData)
-      console.log(`[Training] Data set to state`)
-      
-      // バックグラウンドでキャッシュに保存
-      if (formattedData.length > 0) {
-        try {
-          
-          if (view === 'calendar') {
-            // カレンダービュー：その月のデータのみ保存
-            await cacheMonthData('training', cacheKey, formattedData)
-            console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
-          } else {
-            // グラフ・リストビュー：全データを保存し、さらに月ごとにも分割保存
-            await cacheMonthData('training', cacheKey, formattedData)
-            console.log(`[Training Cache] ✓ Saved ${formattedData.length} records to cache key: ${cacheKey}`)
-            
-            // 月ごとにデータを分割してキャッシュ
-            const monthlyData = {}
-            formattedData.forEach(item => {
-              const monthKey = item.date.substring(0, 7) // YYYY-MM
-              if (!monthlyData[monthKey]) {
-                monthlyData[monthKey] = []
-              }
-              monthlyData[monthKey].push(item)
-            })
-            
-            // 各月のデータをキャッシュに保存
-            for (const [monthKey, monthData] of Object.entries(monthlyData)) {
-              await cacheMonthData('training', monthKey, monthData)
-              console.log(`[Training Cache] ✓ Saved ${monthData.length} records to monthly cache: ${monthKey}`)
-            }
-          }
-        } catch (cacheError) {
-          console.log('[Training Cache] Save failed:', cacheError.message)
-        }
-      }
-    } catch (error) {
-      console.error('[Training] Error fetching data:', error)
-    }
-  }
-
-  const fetchExercises = async () => {
-    try {
-      const res = await fetch('/api/exercises')
-      const json = await res.json()
-      setExercises(json)
-    } catch (error) {
-      console.error('Error fetching exercises:', error)
-      setExercises([
-        { name: 'ダンベルプレス', category: '胸' },
-        { name: 'インクラインダンベルフライ', category: '胸' },
-        { name: 'サイドレイズ', category: '肩' },
-        { name: 'リアレイズ', category: '肩' },
-        { name: 'アームカール', category: '腕' },
-        { name: 'ダンベルエクステンション', category: '腕' }
-      ])
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    try {
-      const currentTime = format(new Date(), 'HH:mm:ss')
-      const datetime = `${formData.date}T${currentTime}`
-      
-      for (const exerciseData of formData.exercises) {
-        if (!exerciseData.exercise) continue
-        
-        const url = '/api/training'
-        const res = await fetch(url, {
-          method: editingDatetime ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date: formData.date,
-            datetime: editingDatetime || datetime,
-            exercise: exerciseData.exercise,
-            sets: exerciseData.sets.map(s => ({
-              weight: parseFloat(s.weight),
-              reps: parseInt(s.reps),
-              negative: parseInt(s.negative || 3)
-            })),
-            interval_seconds: parseInt(exerciseData.interval_seconds)
-          })
-        })
-        
-        if (!res.ok) {
-          const errorText = await res.text()
-          alert('保存に失敗しました: ' + errorText)
-          return
-        }
-      }
-      
-      setShowForm(false)
-      setEditingDatetime(null)
-      setFormData({
-        date: format(new Date(), 'yyyy-MM-dd'),
-        datetime: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-        exercises: [{
-          exercise: '',
-          sets: [{ weight: '', reps: '', negative: 3 }],
-          interval_seconds: 60,
-          previousHistory: null
-        }]
-      })
-      fetchData(true)
-    } catch (error) {
-      console.error('Error saving data:', error)
-      alert('保存中にエラーが発生しました')
-    }
-  }
-
-  const handleEdit = (entry) => {
-    setEditingDatetime(entry.datetime)
-    setFormData({
-      date: entry.date,
-      datetime: entry.datetime,
-      exercises: [{
-        exercise: entry.exercise,
-        sets: entry.sets.map(s => ({
-          weight: s.weight.toString(),
-          reps: s.reps.toString(),
-          negative: s.negative.toString()
-        })),
-        interval_seconds: entry.interval_seconds.toString(),
-        previousHistory: null
-      }]
-    })
-    setShowForm(true)
-  }
-
-  const handleDelete = async (datetime) => {
-    if (!confirm('このトレーニングデータを削除しますか？')) return
-    
-    try {
-      const res = await fetch(`/api/training?datetime=${encodeURIComponent(datetime)}`, {
-        method: 'DELETE'
-      })
-      
-      if (!res.ok) {
-        const errorText = await res.text()
-        alert('削除に失敗しました: ' + errorText)
-        return
-      }
-      
-      fetchData()
-      setSelectedDate(null)
-    } catch (error) {
-      console.error('Error deleting data:', error)
-      alert('削除中にエラーが発生しました')
-    }
-  }
-
-  const addSet = (exerciseIndex) => {
-    const exercise = formData.exercises[exerciseIndex]
-    const lastSet = exercise.sets[exercise.sets.length - 1]
-    const lastWeight = lastSet && lastSet.weight ? lastSet.weight : ''
-    const lastNegative = lastSet && lastSet.negative ? lastSet.negative : 3
-    
-    const newExercises = [...formData.exercises]
-    newExercises[exerciseIndex].sets.push({
-      weight: lastWeight,
-      reps: '',
-      negative: lastNegative
-    })
-    
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const removeSet = (exerciseIndex, setIndex) => {
-    const newExercises = [...formData.exercises]
-    newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex)
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const updateSet = (exerciseIndex, setIndex, field, value) => {
-    const newExercises = [...formData.exercises]
-    newExercises[exerciseIndex].sets[setIndex][field] = value
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const addExercise = () => {
-    setFormData({
-      ...formData,
-      exercises: [
-        ...formData.exercises,
-        {
-          exercise: '',
-          sets: [{ weight: '', reps: '', negative: 3 }],
-          interval_seconds: 60,
-          previousHistory: null
-        }
-      ]
-    })
-  }
-
-  const removeExercise = (index) => {
-    const newExercises = formData.exercises.filter((_, i) => i !== index)
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const updateExercise = (index, field, value) => {
-    const newExercises = [...formData.exercises]
-    newExercises[index][field] = value
-    
-    // 種目が変更された場合、前回履歴を取得
-    if (field === 'exercise' && value) {
-      const history = data
-        .filter(item => item.exercise === value)
-        .sort((a, b) => new Date(b.datetime || b.date) - new Date(a.datetime || a.date))
-      newExercises[index].previousHistory = history.length > 0 ? history[0] : null
-    }
-    
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const copyPreviousHistory = (exerciseIndex) => {
-    const exercise = formData.exercises[exerciseIndex]
-    if (!exercise.previousHistory) return
-    
-    const newExercises = [...formData.exercises]
-    newExercises[exerciseIndex].sets = exercise.previousHistory.sets.map(s => ({
-      weight: s.weight.toString(),
-      reps: s.reps.toString(),
-      negative: (s.negative || 3).toString()
-    }))
-    newExercises[exerciseIndex].interval_seconds = exercise.previousHistory.interval_seconds
-    
-    setFormData({ ...formData, exercises: newExercises })
-  }
-
-  const getWorkoutsForDate = (date) => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return data.filter(item => item.date === dateStr)
-  }
-
-  const getExerciseHistory = (exerciseName) => {
-    let filteredData = data.filter(item => item.exercise === exerciseName)
-    
-    return filteredData
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .map(item => ({
-        date: item.date,
-        maxWeight: Math.max(...item.sets.map(s => s.weight)),
-        totalReps: item.sets.reduce((sum, s) => sum + s.reps, 0),
-        sets: item.sets.length
-      }))
-  }
-
-  const monthStart = startOfMonth(currentMonth)
-  const monthEnd = endOfMonth(currentMonth)
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-  const paddingDays = (monthStart.getDay() + 7) % 7
-
-  const handleDateClick = (date) => {
-    setFormData({
-      date: format(date, 'yyyy-MM-dd'),
-      datetime: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
-      exercises: [{
-        exercise: '',
-        sets: [{ weight: '', reps: '', negative: 3 }],
-        interval_seconds: 60,
-        previousHistory: null
-      }]
-    })
-    setShowForm(true)
-    setSelectedDate(date)
-  }
-
-  const getExerciseName = (ex) => {
-    return typeof ex === 'string' ? ex : ex.name
-  }
-
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.datetime || a.date)
-    const dateB = new Date(b.datetime || b.date)
-    return dateB - dateA
-  })
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">
-          <span className="inline-flex items-center">
-            <TrainingIcon size={28} className="text-white mr-2" />
-            トレーニング記録
-          </span>
-        </h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-transparent text-cyan-400 px-6 py-2 rounded-lg border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all font-medium"
-          >
-            {showForm ? 'キャンセル' : '+ 記録する'}
-          </button>
-        </div>
-      </div>
-
-      {/* タイマーWidget */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {!timerWidgetExpanded ? (
-          <motion.div
-            initial={{ opacity: 0.3 }}
-            animate={{ opacity: 0.3 }}
-            whileHover={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className="w-16 h-16"
-          >
-            <button
-              onClick={() => setTimerWidgetExpanded(true)}
-              className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black rounded-2xl shadow-2xl border border-gray-800 hover:bg-gray-800 transition-colors"
-            >
-              <TimerIcon size={28} className="text-gray-100" />
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className="w-80 bg-gradient-to-br from-gray-900 to-black rounded-2xl shadow-2xl border border-gray-800 p-4"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-100">タイマー</h3>
-              <button
-                onClick={() => setTimerWidgetExpanded(false)}
-                className="text-gray-400 hover:text-gray-200 text-xl font-bold w-6 h-6 flex items-center justify-center"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex space-x-2 mb-4">
-              <button
-                onClick={() => setTimerMode('interval')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${
-                  timerMode === 'interval'
-                    ? 'bg-blue-600 text-white border-2 border-blue-500'
-                    : 'bg-transparent text-gray-400 border-2 border-gray-700 hover:border-gray-500'
-                }`}
-              >
-                <TimerIcon size={16} />
-                インターバル
-              </button>
-              <button
-                onClick={() => setTimerMode('tempo')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${
-                  timerMode === 'tempo'
-                    ? 'bg-blue-600 text-white border-2 border-blue-500'
-                    : 'bg-transparent text-gray-400 border-2 border-gray-700 hover:border-gray-500'
-                }`}
-              >
-                <MusicIcon size={16} />
-                テンポ
-              </button>
-            </div>
-
-            {timerMode === 'interval' ? (
-              <div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    インターバル時間
-                  </label>
-                  <select
-                    value={intervalTime}
-                    onChange={(e) => {
-                      const newTime = parseInt(e.target.value)
-                      setIntervalTime(newTime)
-                      if (!intervalRunning) {
-                        setIntervalRemaining(newTime)
-                      }
-                    }}
-                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
-                  >
-                    <option value="30">30秒</option>
-                    <option value="45">45秒</option>
-                    <option value="60">60秒</option>
-                    <option value="90">90秒</option>
-                    <option value="120">120秒</option>
-                    <option value="180">180秒</option>
-                  </select>
-                </div>
-                <div className="text-6xl font-bold text-center mb-6 text-cyan-400">
-                  {formatTime(intervalRemaining)}
-                </div>
-                <div className="flex gap-2">
-                  {!intervalRunning ? (
-                    <button
-                      onClick={startIntervalTimer}
-                      className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                      <PlayIcon size={20} />
-                      スタート
-                    </button>
-                  ) : (
-                    <button
-                      onClick={pauseIntervalTimer}
-                      className="flex-1 bg-yellow-600 text-white px-4 py-3 rounded-xl hover:bg-yellow-700 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                      <PauseIcon size={20} />
-                      一時停止
-                    </button>
-                  )}
-                  <button
-                    onClick={resetIntervalTimer}
-                    className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
-                  >
-                    <RotateIcon size={20} />
-                    リセット
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    テンポ（間隔秒）
-                  </label>
-                  <select
-                    value={tempoInterval}
-                    onChange={(e) => setTempoInterval(parseInt(e.target.value))}
-                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
-                  >
-                    <option value="1">1秒</option>
-                    <option value="2">2秒</option>
-                    <option value="3">3秒</option>
-                    <option value="4">4秒</option>
-                  </select>
-                </div>
-                <div className="text-6xl font-bold text-center mb-6 text-orange-400">
-                  {tempoCount}
-                </div>
-                <div className="flex gap-2">
-                  {!tempoRunning ? (
-                    <button
-                      onClick={startTempoTimer}
-                      className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                      <PlayIcon size={20} />
-                      スタート
-                    </button>
-                  ) : (
-                    <button
-                      onClick={pauseTempoTimer}
-                      className="flex-1 bg-yellow-600 text-white px-4 py-3 rounded-xl hover:bg-yellow-700 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                      <PauseIcon size={20} />
-                      停止
-                    </button>
-                  )}
-                  <button
-                    onClick={resetTempoTimer}
-                    className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
-                  >
-                    <RotateIcon size={20} />
-                    リセット
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
-
-      {/* ビュー切り替え */}
-      <div className="flex space-x-2 mb-6">
-        <button
-          onClick={() => setView('calendar')}
-          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
-            view === 'calendar'
-              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
-          }`}
-        >
-          <CalendarIcon size={18} />
-          カレンダー
-        </button>
-        <button
-          onClick={() => setView('graph')}
-          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
-            view === 'graph'
-              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
-          }`}
-        >
-          <BarChartIcon size={18} />
-          グラフ
-        </button>
-        <button
-          onClick={() => setView('list')}
-          className={`px-6 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${
-            view === 'list'
-              ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-              : 'border-2 border-gray-600 text-gray-300 hover:bg-gray-700'
-          }`}
-        >
-          <ListIcon size={18} />
-          リスト
-        </button>
-      </div>
-
-      {/* フォーム */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card title={editingDatetime ? 'トレーニングを編集' : 'トレーニングを記録'}>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    日付
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
-
-                {formData.exercises.map((exercise, exerciseIndex) => (
-                  <div key={exerciseIndex} className="border-2 border-slate-700 rounded-2xl p-4 bg-slate-900">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-white font-bold">種目 {exerciseIndex + 1}</h3>
-                      {formData.exercises.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeExercise(exerciseIndex)}
-                          className="text-red-400 hover:text-red-300 text-sm font-medium"
-                        >
-                          削除
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        種目
-                      </label>
-                      <select
-                        value={exercise.exercise}
-                        onChange={(e) => updateExercise(exerciseIndex, 'exercise', e.target.value)}
-                        required
-                        className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
-                      >
-                        <option value="">選択してください</option>
-                        {exercises.map((ex, i) => {
-                          const name = getExerciseName(ex)
-                          return (
-                            <option key={i} value={name}>{name}</option>
-                          )
-                        })}
-                      </select>
-                    </div>
-
-                    {/* 前回履歴表示 */}
-                    {exercise.previousHistory && (
-                      <div className="bg-blue-900/20 border border-blue-700 rounded-xl p-4 mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="text-sm font-bold text-blue-300 inline-flex items-center">
-                            <ClipboardIcon size={18} className="mr-2 text-blue-400" />
-                            前回の記録
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={() => copyPreviousHistory(exerciseIndex)}
-                            className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                          >
-                            コピー
-                          </button>
-                        </div>
-                        <div className="text-xs text-gray-300">
-                          <div className="mb-1">
-                            日時: {format(new Date(exercise.previousHistory.datetime || exercise.previousHistory.date), 'yyyy/MM/dd')}
-                          </div>
-                          <div>
-                            {exercise.previousHistory.sets.map((s, i) => (
-                              <div key={i} className="inline-block mr-3">
-                                セット{i+1}: {s.weight}kg × {s.reps}回 (ネガ{s.negative || 3}秒)
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-1">
-                            インターバル: {exercise.previousHistory.interval_seconds === 0 ? 'なし' : `${exercise.previousHistory.interval_seconds}秒`}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* セット入力 */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        セット
-                      </label>
-                      {exercise.sets.map((set, setIndex) => (
-                        <div key={setIndex} className="bg-slate-700 rounded-xl p-3 mb-2 border border-slate-600">
-                          <div className="grid grid-cols-3 gap-2 mb-2">
-                            <input
-                              type="number"
-                              step="0.5"
-                              placeholder="重量(kg)"
-                              value={set.weight}
-                              onChange={(e) => updateSet(exerciseIndex, setIndex, 'weight', e.target.value)}
-                              className="px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
-                              required
-                            />
-                            <input
-                              type="number"
-                              placeholder="回数"
-                              value={set.reps}
-                              onChange={(e) => updateSet(exerciseIndex, setIndex, 'reps', e.target.value)}
-                              className="px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
-                              required
-                            />
-                            <input
-                              type="number"
-                              placeholder="ネガ(秒)"
-                              value={set.negative || 3}
-                              onChange={(e) => updateSet(exerciseIndex, setIndex, 'negative', e.target.value)}
-                              className="px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
-                              required
-                            />
-                          </div>
-                          {exercise.sets.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSet(exerciseIndex, setIndex)}
-                              className="w-full px-4 py-2 bg-transparent text-red-400 border-2 border-red-400 rounded-xl hover:bg-red-400 hover:text-black text-sm transition-all"
-                            >
-                              削除
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => addSet(exerciseIndex)}
-                        className="w-full mt-2 px-4 py-2 bg-transparent text-cyan-400 border-2 border-cyan-400 rounded-xl hover:bg-cyan-400 hover:text-black transition-all font-medium"
-                      >
-                        + セットを追加
-                      </button>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        インターバル
-                      </label>
-                      <select
-                        value={exercise.interval_seconds}
-                        onChange={(e) => updateExercise(exerciseIndex, 'interval_seconds', e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900 border-2 border-slate-700 rounded-xl text-gray-100 focus:border-cyan-500 focus:outline-none"
-                      >
-                        <option value="0">なし</option>
-                        <option value="30">30秒</option>
-                        <option value="45">45秒</option>
-                        <option value="60">60秒</option>
-                        <option value="90">90秒</option>
-                        <option value="120">120秒</option>
-                        <option value="180">180秒</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={addExercise}
-                  className="w-full px-4 py-2 bg-transparent text-cyan-400 border-2 border-cyan-400 rounded-xl hover:bg-cyan-400 hover:text-black transition-all font-medium"
-                >
-                  + 種目を追加
-                </button>
-
-                <button
-                  type="submit"
-                  className="w-full bg-cyan-500 text-black px-6 py-3 rounded-xl hover:bg-cyan-400 transition-all font-bold"
-                >
-                  {editingDatetime ? '更新する' : '保存する'}
-                </button>
-              </form>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* カレンダービュー */}
-      {view === 'calendar' && (
-        <Card>
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <ChevronLeftIcon size={24} />
-            </button>
-            <h3 className="text-xl font-bold text-white">
-              {format(currentMonth, 'yyyy年M月', { locale: ja })}
-            </h3>
-            <button
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <ChevronRightIcon size={24} />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {['日', '月', '火', '水', '木', '金', '土'].map((day, i) => (
-              <div key={i} className="text-center text-sm font-semibold text-gray-400 py-2">
-                {day}
-              </div>
-            ))}
-            
-            {Array.from({ length: paddingDays }).map((_, i) => (
-              <div key={`padding-${i}`} className="aspect-square" />
-            ))}
-
-
-            {monthDays.map((day, i) => {
-              const workouts = getWorkoutsForDate(day)
-              const hasWorkout = workouts.length > 0
-              const isToday = isSameDay(day, new Date())
-              
-              return (
-                <motion.div
-                  key={i}
-                  className="relative group aspect-square"
-                >
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setSelectedDate(day)
-                    }}
-                    className={`w-full h-full rounded-xl flex flex-col items-center justify-center text-sm transition-all ${
-                      isToday
-                        ? 'border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
-                        : hasWorkout
-                        ? 'bg-blue-600/30 text-white font-semibold hover:bg-blue-600/50'
-                        : 'bg-slate-700/30 text-gray-400 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <div>{format(day, 'd')}</div>
-                    {hasWorkout && (
-                      <div className="flex mt-1 justify-center">
-                        <div className="w-5 h-5 border border-cyan-400 rounded flex items-center justify-center text-[10px] text-cyan-400 font-bold">
-                          {workouts[0].exercise.charAt(0)}
-                        </div>
-                      </div>
-                    )}
-                  </motion.button>
-                  
-                  {/* ホバー時のツールチップ */}
-                  {hasWorkout && (
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      <div className="bg-gray-900 border-2 border-cyan-500 rounded-lg p-3 shadow-xl min-w-[180px]">
-                        <div className="text-xs text-cyan-400 font-bold mb-2">
-                          {format(day, 'M月d日')}
-                        </div>
-                        <div className="space-y-1">
-                          {workouts.map((workout, idx) => (
-                            <div key={idx} className="text-xs text-white">
-                              • {workout.exercise}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {/* 吹き出しの三角形 */}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-[2px]">
-                        <div className="border-8 border-transparent border-t-cyan-500"></div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* 選択された日のワークアウト詳細 */}
-      {selectedDate && view === 'calendar' && (
-        <Card title={`${format(selectedDate, 'M月d日')}のトレーニング`}>
-          <div className="space-y-4">
-            <button
-              onClick={() => handleDateClick(selectedDate)}
-              className="w-full bg-transparent text-cyan-400 px-6 py-3 rounded-xl border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black transition-all font-bold"
-            >
-              + この日にトレーニングを追加
-            </button>
-
-            <AnimatePresence>
-              {getWorkoutsForDate(selectedDate).map((workout, index) => (
-                <motion.div
-                  key={workout.datetime || index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-slate-700 p-4 rounded-xl border-2 border-slate-600"
-                >
-                  <h4 className="font-bold text-white mb-2">
-                    {workout.exercise}
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-                    {workout.sets.map((set, setIdx) => (
-                      <div
-                        key={setIdx}
-                        className="bg-slate-900 p-2 rounded text-center"
-                      >
-                        <div className="text-cyan-400 font-bold">
-                          {set.weight}kg × {set.reps}
-                        </div>
-                        <div className="text-gray-400 text-xs">
-                          Set {setIdx + 1} (ネガ{set.negative || 3}秒)
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(workout)}
-                      className="flex-1 border-2 border-blue-500 text-blue-400 hover:bg-blue-500/10 px-3 py-1 rounded text-sm transition-all"
-                    >
-                      編集
-                    </button>
-                    <button
-                      onClick={() => handleDelete(workout.datetime)}
-                      className="flex-1 border-2 border-red-500 text-red-400 hover:bg-red-500/10 px-3 py-1 rounded text-sm transition-all"
-                    >
-                      削除
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-
-              {getWorkoutsForDate(selectedDate).length === 0 && (
-                <p className="text-gray-400">この日のトレーニングはありません</p>
-              )}
-            </AnimatePresence>
-          </div>
-        </Card>
-      )}
-
-      {/* キャッシュクリアボタン（カレンダービュー時のみ表示） */}
-      {view === 'calendar' && (
-        <div className="flex justify-end">
-          <button 
-            onClick={() => {
-              if (confirm('キャッシュをクリアしますか？')) {
-                indexedDB.deleteDatabase('muscle-cache-db')
-                alert('キャッシュをクリアしました。ページをリロードします。')
-                window.location.reload()
-              }
-            }}
-            className="text-xs px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg hover:bg-red-500/30 transition-all"
-          >
-            キャッシュクリア
-          </button>
-        </div>
-      )}
-
-      {/* グラフビュー */}
-      {view === 'graph' && (
-        <div className="space-y-6">
-          <Card>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">種目を選択</h3>
-              <div className="text-sm text-gray-400">
-                ※ 全期間のデータを表示
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[...new Set(data.map(d => d.exercise))].map(exercise => (
-                <button
-                  key={exercise}
-                  onClick={() => setSelectedExercise(exercise)}
-                  className={`p-3 rounded-xl font-semibold transition-all ${
-                    selectedExercise === exercise
-                      ? 'border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                      : 'border-2 border-slate-700 text-gray-400 hover:bg-slate-700'
-                  }`}
-                >
-                  {exercise}
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          {selectedExercise && (
-            <Card title={`${selectedExercise} の進捗`}>
-              <ExerciseProgressChart
-                data={getExerciseHistory(selectedExercise)}
-                exercise={selectedExercise}
-              />
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* リストビュー */}
-      {view === 'list' && (
-        <Card title="トレーニング履歴">
-          <div className="mb-4 text-sm text-gray-400">
-            ※ 全期間のデータを表示
-          </div>
-          <div className="space-y-4">
-            {sortedData.map((entry, index) => (
-              <motion.div
-                key={entry.datetime || index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="border-b border-slate-700 pb-4 last:border-0"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-bold text-lg text-white">
-                      {entry.exercise}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {format(new Date(entry.date), 'yyyy年M月d日')}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-400">
-                      インターバル: {entry.interval_seconds}秒
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(entry)}
-                        className="text-blue-400 hover:text-blue-300 text-xs font-medium px-2 py-1 rounded hover:bg-blue-500/10"
-                      >
-                        編集
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry.datetime)}
-                        className="text-red-400 hover:text-red-300 text-xs font-medium px-2 py-1 rounded hover:bg-red-500/10"
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  {entry.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="flex items-center text-sm">
-                      <span className="w-16 text-gray-400">第{setIndex + 1}セット</span>
-                      <span className="font-medium text-gray-300">
-                        {set.weight}kg × {set.reps}回
-                        {set.negative && <span className="text-gray-400 ml-2">(ネガ: {set.negative}秒)</span>}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {data.length === 0 && !showForm && (
-        <Card>
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4"><DumbbellIcon size={64} className="text-gray-400" /></div>
-            <h3 className="text-xl font-bold text-white mb-2">
-              まだデータがありません
-            </h3>
-            <p className="text-gray-400 mb-6">
-              トレーニングを記録して進捗を追跡しましょう
-            </p>
-          </div>
-        </Card>
-      )}
-
-      <audio ref={audioRef} src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBi2Ly/DWhzMHHm7A7+OZURE" />
-    </div>
-  )
+  /* アクセントカラー - オレンジ/ゴールド（Distance用） */
+  --accent-orange: #FF9500;
+  --accent-orange-light: #FFB74D;
+  --accent-orange-glow: rgba(255, 149, 0, 0.3);
+  
+  /* アクセントカラー - パープル/ブルー（Weight用） */
+  --accent-purple: #5E5CE6;
+  --accent-purple-light: #7C4DFF;
+  --accent-purple-glow: rgba(94, 92, 230, 0.3);
+  
+  /* アクセントカラー - ピンク（Heart Rate用） */
+  --accent-pink: #FF375F;
+  --accent-pink-glow: rgba(255, 55, 95, 0.3);
+  
+  /* アクセントカラー - グリーン（その他） */
+  --accent-green: #32D74B;
+  --accent-green-glow: rgba(50, 215, 75, 0.3);
+  
+  /* アクセントカラー - レッド（Calories用） */
+  --accent-red: #FF453A;
+  --accent-red-glow: rgba(255, 69, 58, 0.3);
+  
+  /* ボーダー */
+  --border-color: #38383A;
+  --border-light: #48484A;
+  
+  /* シャドウ */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-cyan: 0 4px 20px var(--accent-cyan-glow);
+  --shadow-glow-orange: 0 4px 20px var(--accent-orange-glow);
+  --shadow-glow-purple: 0 4px 20px var(--accent-purple-glow);
 }
 
-function ExerciseProgressChart({ data, exercise }) {
-  if (data.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-400">
-        選択した期間にデータがありません
-      </div>
-    )
-  }
+/* ========== テーマ切替用 変数 (Tailwind設定と連動・dark既定値=従来値) ========== */
+:root {
+  /* Tailwind側カラー (rgbトリプレット) */
+  --tc-bg-primary: 0 0 0;
+  --tc-bg-secondary: 28 28 30;
+  --tc-bg-card: 44 44 46;
+  --tc-bg-card-elevated: 58 58 60;
+  --tc-text-primary: 255 255 255;
+  --tc-text-secondary: 142 142 147;
+  --tc-text-tertiary: 99 99 102;
+  --tc-border-dark: 56 56 58;
+  --tc-border-light: 72 72 74;
+  --tc-accent-cyan: 0 217 255;
+  --tc-accent-cyan-light: 77 208 225;
+  --tc-accent-cyan-dark: 0 184 212;
+  --tc-accent-orange: 255 149 0;
+  --tc-accent-orange-light: 255 183 77;
+  --tc-accent-orange-dark: 245 124 0;
+  --tc-accent-purple: 94 92 230;
+  --tc-accent-purple-light: 124 77 255;
+  --tc-accent-purple-dark: 69 39 160;
+  --tc-accent-pink: 255 55 95;
+  --tc-accent-pink-light: 255 96 144;
+  --tc-accent-pink-dark: 233 30 99;
+  --tc-accent-green: 50 215 75;
+  --tc-accent-green-light: 76 175 80;
+  --tc-accent-green-dark: 46 125 50;
+  --tc-accent-red: 255 69 58;
+  --tc-accent-red-light: 255 107 107;
+  --tc-accent-red-dark: 211 47 47;
+  --tc-gray-100: 243 244 246;
+  --tc-gray-200: 229 231 235;
+  --tc-gray-300: 209 213 219;
+  --tc-gray-400: 156 163 175;
+  --tc-gray-500: 107 114 128;
+  --tc-gray-600: 75 85 99;
+  --tc-gray-700: 55 65 81;
+  --tc-gray-800: 31 41 55;
+  --tc-gray-900: 17 24 39;
+  --tc-slate-600: 71 85 105;
+  --tc-slate-700: 51 65 85;
+  --tc-slate-900: 15 23 42;
+  --tc-cyan-300: 103 232 249;
+  --tc-cyan-400: 34 211 238;
+  --tc-cyan-500: 6 182 212;
+  --tc-cyan-600: 8 145 178;
+  --tc-blue-300: 147 197 253;
+  --tc-blue-400: 96 165 250;
+  --tc-blue-500: 59 130 246;
+  --tc-blue-600: 37 99 235;
+  --tc-blue-700: 29 78 216;
+  --tc-blue-900: 30 58 138;
+  --tc-red-200: 254 202 202;
+  --tc-red-300: 252 165 165;
+  --tc-red-400: 248 113 113;
+  --tc-red-500: 239 68 68;
+  --tc-red-900: 127 29 29;
+  --tc-green-200: 187 247 208;
+  --tc-green-300: 134 239 172;
+  --tc-green-400: 74 222 128;
+  --tc-green-500: 34 197 94;
+  --tc-green-900: 20 83 45;
+  --tc-orange-200: 254 215 170;
+  --tc-orange-300: 253 186 116;
+  --tc-orange-400: 251 146 60;
+  --tc-orange-500: 249 115 22;
+  --tc-orange-900: 124 45 18;
+  --tc-purple-400: 167 139 250;
+  --tc-purple-500: 139 92 246;
+  --tc-yellow-300: 253 224 71;
+  --tc-yellow-600: 202 138 4;
+  --tc-yellow-700: 161 98 7;
+  --tc-yellow-900: 113 63 18;
 
-  const margin = { top: 20, right: 60, bottom: 40, left: 60 }
-  const chartWidth = 800
-  const chartHeight = 400
-  const width = chartWidth + margin.left + margin.right
-  const height = chartHeight + margin.top + margin.bottom
+  /* グラフ・リング用 */
+  --chart-grid: #2C2C2E;
+  --chart-point-border: #000000;
+  --chart-red-soft: #FF6B6B;
+  --chart-green: #10B981;
+  --chart-salmon: #FFA07A;
+  --chart-teal: #4ECDC4;
+  --chart-lavender: #AA96DA;
+  --chart-rose: #F38181;
+  --chart-mint: #95E1D3;
+  --ring-track: #2C2C2E;
 
-  const maxWeight = Math.max(...data.map(d => d.maxWeight))
-  const maxReps = Math.max(...data.map(d => d.totalReps))
-  
-  const yScaleWeight = (value) => {
-    return chartHeight - (value / maxWeight) * chartHeight + margin.top
-  }
-  
-  const yScaleReps = (value) => {
-    return chartHeight - (value / maxReps) * chartHeight + margin.top
-  }
-  
-  const xScale = (index) => {
-    return (index / (data.length - 1)) * chartWidth + margin.left
-  }
-
-  const weightLine = data.map((d, i) => 
-    `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleWeight(d.maxWeight)}`
-  ).join(' ')
-
-  const repsLine = data.map((d, i) => 
-    `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScaleReps(d.totalReps)}`
-  ).join(' ')
-
-  return (
-    <div className="overflow-x-auto">
-      <svg 
-        width="100%" 
-        height="400" 
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="max-w-full"
-      >
-        <g>
-          <line
-            x1={margin.left}
-            y1={margin.top}
-            x2={margin.left}
-            y2={chartHeight + margin.top}
-            stroke="#4b5563"
-            strokeWidth={2}
-          />
-          <line
-            x1={margin.left}
-            y1={chartHeight + margin.top}
-            x2={chartWidth + margin.left}
-            y2={chartHeight + margin.top}
-            stroke="#4b5563"
-            strokeWidth={2}
-          />
-
-          <path d={weightLine} fill="none" stroke="#06b6d4" strokeWidth={3} />
-          {data.map((d, i) => (
-            <g key={`weight-${i}`}>
-              <circle cx={xScale(i)} cy={yScaleWeight(d.maxWeight)} r={5} fill="#06b6d4" />
-              <text
-                x={xScale(i)}
-                y={yScaleWeight(d.maxWeight) - 10}
-                textAnchor="middle"
-                fill="#06b6d4"
-                fontSize="12"
-                fontWeight="bold"
-              >
-                {d.maxWeight}kg
-              </text>
-            </g>
-          ))}
-
-          <path d={repsLine} fill="none" stroke="#f59e0b" strokeWidth={3} />
-          {data.map((d, i) => (
-            <g key={`reps-${i}`}>
-              <circle cx={xScale(i)} cy={yScaleReps(d.totalReps)} r={5} fill="#f59e0b" />
-              <text
-                x={xScale(i)}
-                y={yScaleReps(d.totalReps) + 20}
-                textAnchor="middle"
-                fill="#f59e0b"
-                fontSize="12"
-                fontWeight="bold"
-              >
-                {d.totalReps}回
-              </text>
-            </g>
-          ))}
-
-          {data.map((d, i) => (
-            <text
-              key={`date-${i}`}
-              x={xScale(i)}
-              y={chartHeight + 30}
-              textAnchor="middle"
-              fill="#9ca3af"
-              fontSize="11"
-            >
-              {format(new Date(d.date), 'M/d')}
-            </text>
-          ))}
-
-          <text x={-margin.left + 10} y={-5} fill="#06b6d4" fontSize="12" fontWeight="bold">
-            重量 (kg)
-          </text>
-          <text
-            x={chartWidth + margin.right - 10}
-            y={-5}
-            fill="#f59e0b"
-            fontSize="12"
-            fontWeight="bold"
-            textAnchor="end"
-          >
-            総回数
-          </text>
-        </g>
-      </svg>
-
-      <div className="flex justify-center space-x-6 mt-4">
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-cyan-500 rounded mr-2"></div>
-          <span className="text-gray-400">最大重量 (kg)</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-orange-500 rounded mr-2"></div>
-          <span className="text-gray-400">総回数</span>
-        </div>
-      </div>
-
-      <div className="mt-6 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-700">
-              <th className="text-left p-2 text-gray-400">日付</th>
-              <th className="text-left p-2 text-gray-400">最大重量</th>
-              <th className="text-left p-2 text-gray-400">総回数</th>
-              <th className="text-left p-2 text-gray-400">セット数</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((d, i) => (
-              <tr key={i} className="border-b border-slate-700/50">
-                <td className="p-2 text-white">{d.date}</td>
-                <td className="p-2 text-cyan-400 font-bold">{d.maxWeight} kg</td>
-                <td className="p-2 text-orange-400 font-bold">{d.totalReps} 回</td>
-                <td className="p-2 text-gray-400">{d.sets}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+  /* SNS投稿ページ用 */
+  --sns-accent: #66E0FF;
+  --sns-red: #EF4444;
+  --sns-gray: #6B7280;
+  --sns-text: #FFFFFF;
+  --sns-divider: #1F2937;
+  --sns-muted: #4B5563;
+  --sns-footer: #1F2937;
 }
+
+/* ========== ライトテーマ (クリーム×テラコッタ) ==========
+   html に data-theme="light" が付いたときだけ有効。dark は一切変わらない */
+[data-theme="light"] {
+  /* 既存CSS変数の上書き */
+  --bg-primary: #F6F1E8;
+  --bg-secondary: #EFE8DA;
+  --bg-card: #FFFFFF;
+  --bg-card-elevated: #FBF8F1;
+  --text-primary: #3B2F27;
+  --text-secondary: #8A7F73;
+  --text-tertiary: #B8AC9C;
+  --border-color: #E7DFD2;
+  --border-light: #D8CFC0;
+  --accent-cyan: #FF9500;
+  --accent-cyan-light: #FFB74D;
+  --accent-cyan-glow: rgba(255, 149, 0, 0.25);
+  --accent-orange: #C75800;
+  --accent-orange-light: #A64A00;
+  --accent-orange-glow: rgba(199, 88, 0, 0.25);
+  --accent-purple: #4527A0;
+  --accent-purple-light: #372486;
+  --accent-purple-glow: rgba(69, 39, 160, 0.22);
+  --accent-pink: #C2185B;
+  --accent-pink-glow: rgba(194, 24, 91, 0.22);
+  --accent-green: #3E7C4F;
+  --accent-green-glow: rgba(62, 124, 79, 0.22);
+  --accent-red: #C62828;
+  --accent-red-glow: rgba(198, 40, 40, 0.22);
+  --shadow-sm: 0 2px 8px rgba(59, 47, 39, 0.06);
+  --shadow-md: 0 4px 16px rgba(59, 47, 39, 0.12);
+  --shadow-lg: 0 8px 24px rgba(59, 47, 39, 0.18);
+  --shadow-glow-cyan: 0 4px 20px var(--accent-cyan-glow);
+  --shadow-glow-orange: 0 4px 20px var(--accent-orange-glow);
+  --shadow-glow-purple: 0 4px 20px var(--accent-purple-glow);
+
+  /* Tailwind側カラー (rgbトリプレット) */
+  --tc-bg-primary: 246 241 232;
+  --tc-bg-secondary: 239 232 218;
+  --tc-bg-card: 255 255 255;
+  --tc-bg-card-elevated: 251 248 241;
+  --tc-text-primary: 59 47 39;
+  --tc-text-secondary: 138 127 115;
+  --tc-text-tertiary: 184 172 156;
+  --tc-border-dark: 231 223 210;
+  --tc-border-light: 216 207 192;
+  --tc-accent-cyan: 255 149 0;
+  --tc-accent-cyan-light: 255 183 77;
+  --tc-accent-cyan-dark: 224 120 0;
+  --tc-accent-orange: 199 88 0;
+  --tc-accent-orange-light: 166 74 0;
+  --tc-accent-orange-dark: 166 74 0;
+  --tc-accent-purple: 69 39 160;
+  --tc-accent-purple-light: 55 36 134;
+  --tc-accent-purple-dark: 55 36 134;
+  --tc-accent-pink: 194 24 91;
+  --tc-accent-pink-light: 159 19 73;
+  --tc-accent-pink-dark: 159 19 73;
+  --tc-accent-green: 62 124 79;
+  --tc-accent-green-light: 52 104 66;
+  --tc-accent-green-dark: 52 104 66;
+  --tc-accent-red: 198 40 40;
+  --tc-accent-red-light: 163 32 32;
+  --tc-accent-red-dark: 163 32 32;
+  /* gray系は「darkで白系文字だったもの」が読めるよう反転させる */
+  --tc-gray-100: 59 47 39;
+  --tc-gray-200: 59 47 39;
+  --tc-gray-300: 92 81 71;
+  --tc-gray-400: 138 127 115;
+  --tc-gray-500: 156 146 134;
+  --tc-gray-600: 201 188 168;
+  --tc-gray-700: 239 232 218;
+  --tc-gray-800: 255 255 255;
+  --tc-gray-900: 239 232 218;
+  --tc-slate-600: 216 207 192;
+  --tc-slate-700: 231 223 210;
+  --tc-slate-900: 255 255 255;
+  --tc-cyan-300: 255 149 0;
+  --tc-cyan-400: 255 149 0;
+  --tc-cyan-500: 255 149 0;
+  --tc-cyan-600: 255 149 0;
+  --tc-blue-300: 199 88 0;
+  --tc-blue-400: 199 88 0;
+  --tc-blue-500: 199 88 0;
+  --tc-blue-600: 199 88 0;
+  --tc-blue-700: 166 74 0;
+  --tc-blue-900: 245 224 212;
+  --tc-red-200: 198 40 40;
+  --tc-red-300: 198 40 40;
+  --tc-red-400: 198 40 40;
+  --tc-red-500: 211 47 47;
+  --tc-red-900: 246 213 210;
+  --tc-green-200: 62 124 79;
+  --tc-green-300: 62 124 79;
+  --tc-green-400: 62 124 79;
+  --tc-green-500: 62 124 79;
+  --tc-green-900: 228 239 226;
+  --tc-orange-200: 199 88 0;
+  --tc-orange-300: 199 88 0;
+  --tc-orange-400: 199 88 0;
+  --tc-orange-500: 199 88 0;
+  --tc-orange-900: 245 224 212;
+  --tc-purple-400: 69 39 160;
+  --tc-purple-500: 69 39 160;
+  --tc-yellow-300: 180 83 9;
+  --tc-yellow-600: 233 216 166;
+  --tc-yellow-700: 240 226 188;
+  --tc-yellow-900: 247 238 216;
+
+  /* グラフ・リング用 */
+  --chart-grid: #E7DFD2;
+  --chart-point-border: #FFFFFF;
+  --chart-red-soft: #C62828;
+  --chart-green: #2E7D32;
+  --chart-salmon: #C75800;
+  --chart-teal: #00796B;
+  --chart-lavender: #5E35B1;
+  --chart-rose: #C62828;
+  --chart-mint: #3E7C4F;
+  --ring-track: #E7DFD2;
+
+  /* SNS投稿ページ用 */
+  --sns-accent: #FF9500;
+  --sns-red: #C62828;
+  --sns-gray: #8A7F73;
+  --sns-text: #3B2F27;
+  --sns-divider: #D8CFC0;
+  --sns-muted: #8A7F73;
+  --sns-footer: #B8AC9C;
+}
+
+/* ========== ライトテーマ時の個別ユーティリティ調整 ========== */
+/* text-white はダーク背景上のメインテキストとして使われているため、ライトでは濃い茶へ */
+[data-theme="light"] .text-white { color: #3B2F27; }
+[data-theme="light"] .text-white\/80 { color: rgba(59, 47, 39, 0.8); }
+
+/* ただし色付き背景上の白文字は白のまま維持 */
+[data-theme="light"] .bg-blue-600.text-white,
+[data-theme="light"] .bg-blue-600 .text-white,
+[data-theme="light"] .bg-green-600.text-white,
+[data-theme="light"] .bg-green-600 .text-white,
+[data-theme="light"] .bg-green-500.text-white,
+[data-theme="light"] .bg-green-500 .text-white,
+[data-theme="light"] .bg-red-500.text-white,
+[data-theme="light"] .bg-red-500 .text-white,
+[data-theme="light"] .bg-cyan-500.text-white,
+[data-theme="light"] .bg-cyan-500 .text-white,
+[data-theme="light"] .bg-orange-500.text-white,
+[data-theme="light"] .bg-orange-500 .text-white,
+[data-theme="light"] .bg-accent-cyan.text-white,
+[data-theme="light"] .bg-accent-cyan .text-white,
+[data-theme="light"] [class*="bg-gradient-to"].text-white,
+[data-theme="light"] [class*="bg-gradient-to"] .text-white,
+[data-theme="light"] .bg-gradient-cyan.text-white,
+[data-theme="light"] .bg-gradient-cyan .text-white,
+[data-theme="light"] .gradient-cyan.text-white,
+[data-theme="light"] .gradient-cyan .text-white,
+[data-theme="light"] .gradient-orange.text-white,
+[data-theme="light"] .gradient-orange .text-white,
+[data-theme="light"] .gradient-purple.text-white,
+[data-theme="light"] .gradient-purple .text-white {
+  color: #FFFFFF;
+}
+[data-theme="light"] [class*="bg-gradient-to"] .text-white\/80,
+[data-theme="light"] [class*="bg-gradient-to"].text-white\/80 {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* bg と border / text で同じシェードを共有しているものの調整 */
+[data-theme="light"] .border-gray-700 { border-color: #E7DFD2; }
+[data-theme="light"] .border-gray-800 { border-color: #D8CFC0; }
+[data-theme="light"] .border-gray-100 { border-color: #E7DFD2; }
+[data-theme="light"] .border-slate-700 { border-color: #D8CFC0; }
+[data-theme="light"] .bg-gray-100 { background-color: #EFE8DA; }
+[data-theme="light"] .bg-gray-300 { background-color: #E7DFD2; }
+[data-theme="light"] .bg-gray-400 { background-color: #D8CFC0; }
+
+/* 下部ナビの影をライト向けにソフトに */
+[data-theme="light"] .bottom-nav-dark { box-shadow: 0 -4px 12px rgba(59, 47, 39, 0.08); }
+
+/* SNS投稿ページ (training-summary) はライトテーマに追従 */
+/* 投稿写真: dark は黒に馴染ませるため暗く表示、light は非表示 */
+.sns-photo { filter: brightness(0.4) contrast(1.1); }
+[data-theme="light"] .sns-photo,
+[data-theme="light"] .sns-photo-wrap { display: none; }
+/* 写真を隠すとヘッダーの高さがゼロになりタイトルがリストに重なるため、ライトではタイトルを通常フローに戻す */
+[data-theme="light"] .sns-header-text { position: static; }
+
+/* トレーニングページ (ライト): shoppinglist の色合いに合わせる */
+/* カレンダーの筋トレした日: 柔らかいテラコッタ */
+[data-theme="light"] .training-page .bg-blue-600\/30 { background-color: #E3B096; }
+[data-theme="light"] .training-page .hover\:bg-blue-600\/50:hover { background-color: #D9A383; }
+/* 種目カード・フォームのセット行: 白ベースに、中のチップ/入力はクリーム */
+[data-theme="light"] .training-page .bg-slate-700 { background-color: #FFFFFF; }
+[data-theme="light"] .training-page .bg-slate-900 { background-color: #F6F1E8; }
+/* タイマー FAB / 展開パネル: 黒グラデーション → 白カード */
+[data-theme="light"] .training-page .timer-fab,
+[data-theme="light"] .training-page .timer-panel {
+  background: #FFFFFF;
+  border-color: #E7DFD2;
+  box-shadow: 0 8px 24px rgba(59, 47, 39, 0.18);
+}
+
+/* ========== ベーススタイル ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 
+    'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ========== ダークカードスタイル ========== */
+.dark-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+}
+
+.dark-card:hover {
+  background: var(--bg-card-elevated);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.dark-card-elevated {
+  background: var(--bg-card-elevated);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-light);
+}
+
+/* ========== 円形プログレスリング（画像と同じスタイル） ========== */
+.progress-ring-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px auto;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.5s ease;
+  stroke-linecap: round;
+}
+
+/* 円の中央の数値表示 */
+.progress-ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.progress-ring-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.progress-ring-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* ========== ヘッダー（TODAY + 日付） ========== */
+.header-section {
+  text-align: center;
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-title {
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.header-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ========== 統計グリッド ========== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.stat-card-dark {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.stat-card-dark:hover {
+  background: var(--bg-card-elevated);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.stat-value-large {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label-dark {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* ========== メトリクスセクション（Steps, Distance, Weight） ========== */
+.metric-section {
+  padding: 32px 20px;
+  border-bottom: 3px solid;
+}
+
+.metric-section.steps {
+  border-bottom-color: var(--accent-cyan);
+}
+
+.metric-section.distance {
+  border-bottom-color: var(--accent-orange);
+}
+
+.metric-section.weight {
+  border-bottom-color: var(--accent-purple);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-icon-large {
+  font-size: 40px;
+}
+
+.metric-title {
+  font-size: 16px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+/* ========== タブナビゲーション ========== */
+.tab-navigation {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-navigation::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding-bottom: 8px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab-item.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.tab-item:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* ========== ボトムナビゲーション ========== */
+.bottom-nav-dark {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  padding: 12px 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.nav-items {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.nav-item-dark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px 16px;
+}
+
+.nav-item-dark.active {
+  color: var(--accent-cyan);
+}
+
+.nav-item-dark:not(.active) {
+  color: var(--text-secondary);
+}
+
+.nav-item-dark:active {
+  transform: scale(0.95);
+}
+
+.nav-icon {
+  font-size: 24px;
+}
+
+.nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ========== ボタンスタイル ========== */
+.btn-dark {
+  padding: 14px 28px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 17px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+.btn-cyan {
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-glow-cyan);
+}
+
+.btn-cyan:hover {
+  background: var(--accent-cyan-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px var(--accent-cyan-glow);
+}
+
+.btn-cyan:active {
+  transform: scale(0.98);
+}
+
+.btn-orange {
+  background: var(--accent-orange);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-glow-orange);
+}
+
+.btn-purple {
+  background: var(--accent-purple);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.btn-outline-dark {
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--border-light);
+}
+
+.btn-outline-dark:hover {
+  background: var(--bg-card);
+  border-color: var(--text-secondary);
+}
+
+/* ========== インプットスタイル ========== */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 17px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  background: var(--bg-card-elevated);
+  box-shadow: 0 0 0 4px var(--accent-cyan-glow);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ========== グラデーションアクセント ========== */
+.gradient-cyan {
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-light) 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-light) 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-purple-light) 100%);
+}
+
+/* ========== 数値カウンター（大きな数値表示） ========== */
+.counter-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+
+.counter-value {
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.counter-unit {
+  font-size: 24px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.counter-secondary {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* ========== アニメーション ========== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: var(--shadow-glow-cyan);
+  }
+  50% {
+    box-shadow: 0 4px 32px var(--accent-cyan-glow);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s ease;
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* ========== セパレーター ========== */
+.separator-dark {
+  height: 1px;
+  background: var(--border-color);
+  margin: 24px 0;
+}
+
+.separator-thick {
+  height: 3px;
+  margin: 0;
+}
+
+.separator-cyan {
+  background: var(--accent-cyan);
+}
+
+.separator-orange {
+  background: var(--accent-orange);
+}
+
+.separator-purple {
+  background: var(--accent-purple);
+}
+
+/* ========== スクロールバー ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ========== レスポンシブ ========== */
+@media (max-width: 768px) {
+  .dark-card,
+  .dark-card-elevated {
+    padding: 20px;
+  }
+  
+  .counter-value {
+    font-size: 52px;
+  }
+  
+  .stats-grid {
+    gap: 10px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .counter-value {
+    font-size: 48px;
+  }
+  
+  .stat-value-large {
+    font-size: 28px;
+  }
+}
+
+/* ========== ユーティリティクラス ========== */
+.text-cyan { color: var(--accent-cyan); }
+.text-orange { color: var(--accent-orange); }
+.text-purple { color: var(--accent-purple); }
+.text-pink { color: var(--accent-pink); }
+.text-green { color: var(--accent-green); }
+.text-red { color: var(--accent-red); }
+
+.bg-cyan { background-color: var(--accent-cyan); }
+.bg-orange { background-color: var(--accent-orange); }
+.bg-purple { background-color: var(--accent-purple); }
+.bg-pink { background-color: var(--accent-pink); }
+.bg-green { background-color: var(--accent-green); }
+.bg-red { background-color: var(--accent-red); }
+
+.border-cyan { border-color: var(--accent-cyan); }
+.border-orange { border-color: var(--accent-orange); }
+.border-purple { border-color: var(--accent-purple); }
