@@ -269,7 +269,7 @@ export default function TrainingSummary() {
         </div>
         
         {/* 左側のヘッダーテキスト（absolute で画像に重ねる） */}
-        <div className="absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
+        <div className="sns-header-text absolute left-0 top-0 z-10 p-4 sm:p-6 pt-2 sm:pt-3">
           <div className="flex items-center gap-1 mb-2">
             <button onClick={() => shiftDate(-1)} aria-label="前日" className="transition-opacity hover:opacity-70 leading-none" style={{ color: 'var(--sns-muted, #4B5563)' }}>
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>

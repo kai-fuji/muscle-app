@@ -338,6 +338,8 @@
 .sns-photo { filter: brightness(0.4) contrast(1.1); }
 [data-theme="light"] .sns-photo,
 [data-theme="light"] .sns-photo-wrap { display: none; }
+/* 写真を隠すとヘッダーの高さがゼロになりタイトルがリストに重なるため、ライトではタイトルを通常フローに戻す */
+[data-theme="light"] .sns-header-text { position: static; }
 
 /* ========== ベーススタイル ========== */
 * {
