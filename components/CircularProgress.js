@@ -1,6 +1,7 @@
 // CircularProgress.js - 大きな円形プログレスリング（画像と同じスタイル）
 import React from 'react'
 import { ProteinIcon, FatIcon, CarbsIcon, FiberIcon } from './Icons'
+import { resolveColor } from './Chart'
 
 export default function CircularProgress({ 
   value = 0, 
@@ -14,6 +15,8 @@ export default function CircularProgress({
   // 安全な値を使用（undefined回避）
   const safeValue = value || 0
   const safeMax = max || 100
+  // テーマ連動: リング色をCSS変数から解決
+  const ringColors = colors.map((c) => resolveColor(c))
   
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
@@ -34,15 +37,15 @@ export default function CircularProgress({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#2C2C2E"
+          style={{ stroke: 'var(--ring-track, #2C2C2E)' }}
           strokeWidth={strokeWidth}
         />
         
         {/* プログレスの円（グラデーション） */}
         <defs>
           <linearGradient id={`gradient-${label}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={colors[0]} />
-            <stop offset="100%" stopColor={colors[1]} />
+            <stop offset="0%" stopColor={ringColors[0]} />
+            <stop offset="100%" stopColor={ringColors[1]} />
           </linearGradient>
         </defs>
         
@@ -81,7 +84,7 @@ export default function CircularProgress({
           className="mt-2 px-3 py-1 rounded-full text-xs font-semibold"
           style={{ 
             background: 'rgba(0, 217, 255, 0.2)',
-            color: '#00D9FF'
+            color: 'var(--accent-cyan, #00D9FF)'
           }}
         >
           {percentage}%
@@ -103,6 +106,8 @@ export function SmallCircularMetric({
   // 安全な値を使用（undefined回避）
   const safeValue = value || 0
   const safeMax = max || 100
+  // テーマ連動: リング色をCSS変数から解決
+  const ringColor = resolveColor(color)
   
   const size = 80
   const strokeWidth = 6
@@ -125,7 +130,7 @@ export function SmallCircularMetric({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#2C2C2E"
+            style={{ stroke: 'var(--ring-track, #2C2C2E)' }}
             strokeWidth={strokeWidth}
           />
           
@@ -135,14 +140,14 @@ export function SmallCircularMetric({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={color}
+            stroke={ringColor}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
             style={{
               transition: 'stroke-dashoffset 0.5s ease',
-              filter: `drop-shadow(0 0 4px ${color}80)`
+              filter: `drop-shadow(0 0 4px ${ringColor}80)`
             }}
           />
         </svg>

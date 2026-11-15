@@ -8,85 +8,144 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // 背景色
-        'bg-primary': '#000000',
-        'bg-secondary': '#1C1C1E',
-        'bg-card': '#2C2C2E',
-        'bg-card-elevated': '#3A3A3C',
+        // 背景色 (CSS変数連動: dark=従来値 / light=クリーム×テラコッタ)
+        'bg-primary': 'rgb(var(--tc-bg-primary) / <alpha-value>)',
+        'bg-secondary': 'rgb(var(--tc-bg-secondary) / <alpha-value>)',
+        'bg-card': 'rgb(var(--tc-bg-card) / <alpha-value>)',
+        'bg-card-elevated': 'rgb(var(--tc-bg-card-elevated) / <alpha-value>)',
         
         // テキストカラー
-        'text-primary': '#FFFFFF',
-        'text-secondary': '#8E8E93',
-        'text-tertiary': '#636366',
+        'text-primary': 'rgb(var(--tc-text-primary) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--tc-text-secondary) / <alpha-value>)',
+        'text-tertiary': 'rgb(var(--tc-text-tertiary) / <alpha-value>)',
         
         // アクセントカラー - シアン/ターコイズ（Steps用）
         'accent-cyan': {
-          DEFAULT: '#00D9FF',
-          light: '#4DD0E1',
-          dark: '#00B8D4',
+          DEFAULT: 'rgb(var(--tc-accent-cyan) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-cyan-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-cyan-dark) / <alpha-value>)',
         },
         
         // アクセントカラー - オレンジ/ゴールド（Distance用）
         'accent-orange': {
-          DEFAULT: '#FF9500',
-          light: '#FFB74D',
-          dark: '#F57C00',
+          DEFAULT: 'rgb(var(--tc-accent-orange) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-orange-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-orange-dark) / <alpha-value>)',
         },
         
         // アクセントカラー - パープル/ブルー（Weight用）
         'accent-purple': {
-          DEFAULT: '#5E5CE6',
-          light: '#7C4DFF',
-          dark: '#4527A0',
+          DEFAULT: 'rgb(var(--tc-accent-purple) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-purple-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-purple-dark) / <alpha-value>)',
         },
         
         // アクセントカラー - ピンク（Heart Rate用）
         'accent-pink': {
-          DEFAULT: '#FF375F',
-          light: '#FF6090',
-          dark: '#E91E63',
+          DEFAULT: 'rgb(var(--tc-accent-pink) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-pink-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-pink-dark) / <alpha-value>)',
         },
         
         // アクセントカラー - グリーン
         'accent-green': {
-          DEFAULT: '#32D74B',
-          light: '#4CAF50',
-          dark: '#2E7D32',
+          DEFAULT: 'rgb(var(--tc-accent-green) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-green-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-green-dark) / <alpha-value>)',
         },
         
         // アクセントカラー - レッド（Calories用）
         'accent-red': {
-          DEFAULT: '#FF453A',
-          light: '#FF6B6B',
-          dark: '#D32F2F',
+          DEFAULT: 'rgb(var(--tc-accent-red) / <alpha-value>)',
+          light: 'rgb(var(--tc-accent-red-light) / <alpha-value>)',
+          dark: 'rgb(var(--tc-accent-red-dark) / <alpha-value>)',
         },
         
         // ボーダー
-        'border-dark': '#38383A',
-        'border-light': '#48484A',
+        'border-dark': 'rgb(var(--tc-border-dark) / <alpha-value>)',
+        'border-light': 'rgb(var(--tc-border-light) / <alpha-value>)',
+        
+        // 標準カラーのうち使用中のシェードをCSS変数連動に（未指定シェードはTailwind標準のまま）
+        gray: {
+          100: 'rgb(var(--tc-gray-100) / <alpha-value>)',
+          200: 'rgb(var(--tc-gray-200) / <alpha-value>)',
+          300: 'rgb(var(--tc-gray-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-gray-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-gray-500) / <alpha-value>)',
+          600: 'rgb(var(--tc-gray-600) / <alpha-value>)',
+          700: 'rgb(var(--tc-gray-700) / <alpha-value>)',
+          800: 'rgb(var(--tc-gray-800) / <alpha-value>)',
+          900: 'rgb(var(--tc-gray-900) / <alpha-value>)',
+        },
+        slate: {
+          600: 'rgb(var(--tc-slate-600) / <alpha-value>)',
+          700: 'rgb(var(--tc-slate-700) / <alpha-value>)',
+          900: 'rgb(var(--tc-slate-900) / <alpha-value>)',
+        },
+        cyan: {
+          300: 'rgb(var(--tc-cyan-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-cyan-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-cyan-500) / <alpha-value>)',
+        },
+        blue: {
+          300: 'rgb(var(--tc-blue-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-blue-400) / <alpha-value>)',
+          900: 'rgb(var(--tc-blue-900) / <alpha-value>)',
+        },
+        red: {
+          200: 'rgb(var(--tc-red-200) / <alpha-value>)',
+          300: 'rgb(var(--tc-red-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-red-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-red-500) / <alpha-value>)',
+          900: 'rgb(var(--tc-red-900) / <alpha-value>)',
+        },
+        green: {
+          200: 'rgb(var(--tc-green-200) / <alpha-value>)',
+          300: 'rgb(var(--tc-green-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-green-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-green-500) / <alpha-value>)',
+          900: 'rgb(var(--tc-green-900) / <alpha-value>)',
+        },
+        orange: {
+          200: 'rgb(var(--tc-orange-200) / <alpha-value>)',
+          300: 'rgb(var(--tc-orange-300) / <alpha-value>)',
+          400: 'rgb(var(--tc-orange-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-orange-500) / <alpha-value>)',
+          900: 'rgb(var(--tc-orange-900) / <alpha-value>)',
+        },
+        purple: {
+          400: 'rgb(var(--tc-purple-400) / <alpha-value>)',
+          500: 'rgb(var(--tc-purple-500) / <alpha-value>)',
+        },
+        yellow: {
+          300: 'rgb(var(--tc-yellow-300) / <alpha-value>)',
+          600: 'rgb(var(--tc-yellow-600) / <alpha-value>)',
+          700: 'rgb(var(--tc-yellow-700) / <alpha-value>)',
+          900: 'rgb(var(--tc-yellow-900) / <alpha-value>)',
+        },
       },
       
       backgroundImage: {
         // グラデーション
-        'gradient-cyan': 'linear-gradient(135deg, #00D9FF 0%, #4DD0E1 100%)',
-        'gradient-orange': 'linear-gradient(135deg, #FF9500 0%, #FFB74D 100%)',
-        'gradient-purple': 'linear-gradient(135deg, #5E5CE6 0%, #7C4DFF 100%)',
-        'gradient-pink': 'linear-gradient(135deg, #FF375F 0%, #FF6090 100%)',
-        'gradient-green': 'linear-gradient(135deg, #32D74B 0%, #4CAF50 100%)',
-        'gradient-red': 'linear-gradient(135deg, #FF453A 0%, #FF6B6B 100%)',
+        'gradient-cyan': 'linear-gradient(135deg, rgb(var(--tc-accent-cyan)) 0%, rgb(var(--tc-accent-cyan-light)) 100%)',
+        'gradient-orange': 'linear-gradient(135deg, rgb(var(--tc-accent-orange)) 0%, rgb(var(--tc-accent-orange-light)) 100%)',
+        'gradient-purple': 'linear-gradient(135deg, rgb(var(--tc-accent-purple)) 0%, rgb(var(--tc-accent-purple-light)) 100%)',
+        'gradient-pink': 'linear-gradient(135deg, rgb(var(--tc-accent-pink)) 0%, rgb(var(--tc-accent-pink-light)) 100%)',
+        'gradient-green': 'linear-gradient(135deg, rgb(var(--tc-accent-green)) 0%, rgb(var(--tc-accent-green-light)) 100%)',
+        'gradient-red': 'linear-gradient(135deg, rgb(var(--tc-accent-red)) 0%, rgb(var(--tc-accent-red-light)) 100%)',
         
         // 放射状グラデーション
-        'radial-cyan': 'radial-gradient(circle, rgba(0, 217, 255, 0.2) 0%, transparent 70%)',
-        'radial-orange': 'radial-gradient(circle, rgba(255, 149, 0, 0.2) 0%, transparent 70%)',
-        'radial-purple': 'radial-gradient(circle, rgba(94, 92, 230, 0.2) 0%, transparent 70%)',
+        'radial-cyan': 'radial-gradient(circle, rgb(var(--tc-accent-cyan) / 0.2) 0%, transparent 70%)',
+        'radial-orange': 'radial-gradient(circle, rgb(var(--tc-accent-orange) / 0.2) 0%, transparent 70%)',
+        'radial-purple': 'radial-gradient(circle, rgb(var(--tc-accent-purple) / 0.2) 0%, transparent 70%)',
       },
       
       boxShadow: {
-        'glow-cyan': '0 4px 20px rgba(0, 217, 255, 0.3)',
-        'glow-orange': '0 4px 20px rgba(255, 149, 0, 0.3)',
-        'glow-purple': '0 4px 20px rgba(94, 92, 230, 0.3)',
-        'glow-pink': '0 4px 20px rgba(255, 55, 95, 0.3)',
-        'glow-green': '0 4px 20px rgba(50, 215, 75, 0.3)',
+        'glow-cyan': '0 4px 20px rgb(var(--tc-accent-cyan) / 0.3)',
+        'glow-orange': '0 4px 20px rgb(var(--tc-accent-orange) / 0.3)',
+        'glow-purple': '0 4px 20px rgb(var(--tc-accent-purple) / 0.3)',
+        'glow-pink': '0 4px 20px rgb(var(--tc-accent-pink) / 0.3)',
+        'glow-green': '0 4px 20px rgb(var(--tc-accent-green) / 0.3)',
         'dark-sm': '0 2px 8px rgba(0, 0, 0, 0.3)',
         'dark-md': '0 4px 16px rgba(0, 0, 0, 0.4)',
         'dark-lg': '0 8px 24px rgba(0, 0, 0, 0.5)',

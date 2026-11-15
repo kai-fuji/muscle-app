@@ -58,6 +58,264 @@
   --shadow-glow-purple: 0 4px 20px var(--accent-purple-glow);
 }
 
+/* ========== テーマ切替用 変数 (Tailwind設定と連動・dark既定値=従来値) ========== */
+:root {
+  /* Tailwind側カラー (rgbトリプレット) */
+  --tc-bg-primary: 0 0 0;
+  --tc-bg-secondary: 28 28 30;
+  --tc-bg-card: 44 44 46;
+  --tc-bg-card-elevated: 58 58 60;
+  --tc-text-primary: 255 255 255;
+  --tc-text-secondary: 142 142 147;
+  --tc-text-tertiary: 99 99 102;
+  --tc-border-dark: 56 56 58;
+  --tc-border-light: 72 72 74;
+  --tc-accent-cyan: 0 217 255;
+  --tc-accent-cyan-light: 77 208 225;
+  --tc-accent-cyan-dark: 0 184 212;
+  --tc-accent-orange: 255 149 0;
+  --tc-accent-orange-light: 255 183 77;
+  --tc-accent-orange-dark: 245 124 0;
+  --tc-accent-purple: 94 92 230;
+  --tc-accent-purple-light: 124 77 255;
+  --tc-accent-purple-dark: 69 39 160;
+  --tc-accent-pink: 255 55 95;
+  --tc-accent-pink-light: 255 96 144;
+  --tc-accent-pink-dark: 233 30 99;
+  --tc-accent-green: 50 215 75;
+  --tc-accent-green-light: 76 175 80;
+  --tc-accent-green-dark: 46 125 50;
+  --tc-accent-red: 255 69 58;
+  --tc-accent-red-light: 255 107 107;
+  --tc-accent-red-dark: 211 47 47;
+  --tc-gray-100: 243 244 246;
+  --tc-gray-200: 229 231 235;
+  --tc-gray-300: 209 213 219;
+  --tc-gray-400: 156 163 175;
+  --tc-gray-500: 107 114 128;
+  --tc-gray-600: 75 85 99;
+  --tc-gray-700: 55 65 81;
+  --tc-gray-800: 31 41 55;
+  --tc-gray-900: 17 24 39;
+  --tc-slate-600: 71 85 105;
+  --tc-slate-700: 51 65 85;
+  --tc-slate-900: 15 23 42;
+  --tc-cyan-300: 103 232 249;
+  --tc-cyan-400: 34 211 238;
+  --tc-cyan-500: 6 182 212;
+  --tc-blue-300: 147 197 253;
+  --tc-blue-400: 96 165 250;
+  --tc-blue-900: 30 58 138;
+  --tc-red-200: 254 202 202;
+  --tc-red-300: 252 165 165;
+  --tc-red-400: 248 113 113;
+  --tc-red-500: 239 68 68;
+  --tc-red-900: 127 29 29;
+  --tc-green-200: 187 247 208;
+  --tc-green-300: 134 239 172;
+  --tc-green-400: 74 222 128;
+  --tc-green-500: 34 197 94;
+  --tc-green-900: 20 83 45;
+  --tc-orange-200: 254 215 170;
+  --tc-orange-300: 253 186 116;
+  --tc-orange-400: 251 146 60;
+  --tc-orange-500: 249 115 22;
+  --tc-orange-900: 124 45 18;
+  --tc-purple-400: 167 139 250;
+  --tc-purple-500: 139 92 246;
+  --tc-yellow-300: 253 224 71;
+  --tc-yellow-600: 202 138 4;
+  --tc-yellow-700: 161 98 7;
+  --tc-yellow-900: 113 63 18;
+
+  /* グラフ・リング用 */
+  --chart-grid: #2C2C2E;
+  --chart-point-border: #000000;
+  --chart-red-soft: #FF6B6B;
+  --chart-green: #10B981;
+  --chart-salmon: #FFA07A;
+  --chart-teal: #4ECDC4;
+  --chart-lavender: #AA96DA;
+  --chart-rose: #F38181;
+  --chart-mint: #95E1D3;
+  --ring-track: #2C2C2E;
+}
+
+/* ========== ライトテーマ (クリーム×テラコッタ) ==========
+   html に data-theme="light" が付いたときだけ有効。dark は一切変わらない */
+[data-theme="light"] {
+  /* 既存CSS変数の上書き */
+  --bg-primary: #F6F1E8;
+  --bg-secondary: #EFE8DA;
+  --bg-card: #FFFFFF;
+  --bg-card-elevated: #FBF8F1;
+  --text-primary: #3B2F27;
+  --text-secondary: #8A7F73;
+  --text-tertiary: #B8AC9C;
+  --border-color: #E7DFD2;
+  --border-light: #D8CFC0;
+  --accent-cyan: #00838F;
+  --accent-cyan-light: #00697A;
+  --accent-cyan-glow: rgba(0, 131, 143, 0.25);
+  --accent-orange: #C75800;
+  --accent-orange-light: #A64A00;
+  --accent-orange-glow: rgba(199, 88, 0, 0.25);
+  --accent-purple: #4527A0;
+  --accent-purple-light: #372486;
+  --accent-purple-glow: rgba(69, 39, 160, 0.22);
+  --accent-pink: #C2185B;
+  --accent-pink-glow: rgba(194, 24, 91, 0.22);
+  --accent-green: #3E7C4F;
+  --accent-green-glow: rgba(62, 124, 79, 0.22);
+  --accent-red: #C62828;
+  --accent-red-glow: rgba(198, 40, 40, 0.22);
+  --shadow-sm: 0 2px 8px rgba(59, 47, 39, 0.06);
+  --shadow-md: 0 4px 16px rgba(59, 47, 39, 0.12);
+  --shadow-lg: 0 8px 24px rgba(59, 47, 39, 0.18);
+  --shadow-glow-cyan: 0 4px 20px var(--accent-cyan-glow);
+  --shadow-glow-orange: 0 4px 20px var(--accent-orange-glow);
+  --shadow-glow-purple: 0 4px 20px var(--accent-purple-glow);
+
+  /* Tailwind側カラー (rgbトリプレット) */
+  --tc-bg-primary: 246 241 232;
+  --tc-bg-secondary: 239 232 218;
+  --tc-bg-card: 255 255 255;
+  --tc-bg-card-elevated: 251 248 241;
+  --tc-text-primary: 59 47 39;
+  --tc-text-secondary: 138 127 115;
+  --tc-text-tertiary: 184 172 156;
+  --tc-border-dark: 231 223 210;
+  --tc-border-light: 216 207 192;
+  --tc-accent-cyan: 0 131 143;
+  --tc-accent-cyan-light: 0 105 122;
+  --tc-accent-cyan-dark: 0 105 122;
+  --tc-accent-orange: 199 88 0;
+  --tc-accent-orange-light: 166 74 0;
+  --tc-accent-orange-dark: 166 74 0;
+  --tc-accent-purple: 69 39 160;
+  --tc-accent-purple-light: 55 36 134;
+  --tc-accent-purple-dark: 55 36 134;
+  --tc-accent-pink: 194 24 91;
+  --tc-accent-pink-light: 159 19 73;
+  --tc-accent-pink-dark: 159 19 73;
+  --tc-accent-green: 62 124 79;
+  --tc-accent-green-light: 52 104 66;
+  --tc-accent-green-dark: 52 104 66;
+  --tc-accent-red: 198 40 40;
+  --tc-accent-red-light: 163 32 32;
+  --tc-accent-red-dark: 163 32 32;
+  /* gray系は「darkで白系文字だったもの」が読めるよう反転させる */
+  --tc-gray-100: 59 47 39;
+  --tc-gray-200: 59 47 39;
+  --tc-gray-300: 92 81 71;
+  --tc-gray-400: 138 127 115;
+  --tc-gray-500: 156 146 134;
+  --tc-gray-600: 201 188 168;
+  --tc-gray-700: 239 232 218;
+  --tc-gray-800: 255 255 255;
+  --tc-gray-900: 239 232 218;
+  --tc-slate-600: 216 207 192;
+  --tc-slate-700: 231 223 210;
+  --tc-slate-900: 255 255 255;
+  --tc-cyan-300: 0 131 143;
+  --tc-cyan-400: 0 131 143;
+  --tc-cyan-500: 8 145 178;
+  --tc-blue-300: 37 99 235;
+  --tc-blue-400: 37 99 235;
+  --tc-blue-900: 220 231 247;
+  --tc-red-200: 198 40 40;
+  --tc-red-300: 198 40 40;
+  --tc-red-400: 198 40 40;
+  --tc-red-500: 211 47 47;
+  --tc-red-900: 246 213 210;
+  --tc-green-200: 62 124 79;
+  --tc-green-300: 62 124 79;
+  --tc-green-400: 62 124 79;
+  --tc-green-500: 62 124 79;
+  --tc-green-900: 228 239 226;
+  --tc-orange-200: 199 88 0;
+  --tc-orange-300: 199 88 0;
+  --tc-orange-400: 199 88 0;
+  --tc-orange-500: 199 88 0;
+  --tc-orange-900: 245 224 212;
+  --tc-purple-400: 69 39 160;
+  --tc-purple-500: 69 39 160;
+  --tc-yellow-300: 180 83 9;
+  --tc-yellow-600: 233 216 166;
+  --tc-yellow-700: 240 226 188;
+  --tc-yellow-900: 247 238 216;
+
+  /* グラフ・リング用 */
+  --chart-grid: #E7DFD2;
+  --chart-point-border: #FFFFFF;
+  --chart-red-soft: #C62828;
+  --chart-green: #2E7D32;
+  --chart-salmon: #C75800;
+  --chart-teal: #00796B;
+  --chart-lavender: #5E35B1;
+  --chart-rose: #C62828;
+  --chart-mint: #3E7C4F;
+  --ring-track: #E7DFD2;
+}
+
+/* ========== ライトテーマ時の個別ユーティリティ調整 ========== */
+/* text-white はダーク背景上のメインテキストとして使われているため、ライトでは濃い茶へ */
+[data-theme="light"] .text-white { color: #3B2F27; }
+[data-theme="light"] .text-white\/80 { color: rgba(59, 47, 39, 0.8); }
+
+/* ただし色付き背景上の白文字は白のまま維持 */
+[data-theme="light"] .bg-blue-600.text-white,
+[data-theme="light"] .bg-blue-600 .text-white,
+[data-theme="light"] .bg-green-600.text-white,
+[data-theme="light"] .bg-green-600 .text-white,
+[data-theme="light"] .bg-green-500.text-white,
+[data-theme="light"] .bg-green-500 .text-white,
+[data-theme="light"] .bg-red-500.text-white,
+[data-theme="light"] .bg-red-500 .text-white,
+[data-theme="light"] .bg-cyan-500.text-white,
+[data-theme="light"] .bg-cyan-500 .text-white,
+[data-theme="light"] .bg-orange-500.text-white,
+[data-theme="light"] .bg-orange-500 .text-white,
+[data-theme="light"] .bg-accent-cyan.text-white,
+[data-theme="light"] .bg-accent-cyan .text-white,
+[data-theme="light"] [class*="bg-gradient-to"].text-white,
+[data-theme="light"] [class*="bg-gradient-to"] .text-white,
+[data-theme="light"] .bg-gradient-cyan.text-white,
+[data-theme="light"] .bg-gradient-cyan .text-white,
+[data-theme="light"] .gradient-cyan.text-white,
+[data-theme="light"] .gradient-cyan .text-white,
+[data-theme="light"] .gradient-orange.text-white,
+[data-theme="light"] .gradient-orange .text-white,
+[data-theme="light"] .gradient-purple.text-white,
+[data-theme="light"] .gradient-purple .text-white {
+  color: #FFFFFF;
+}
+[data-theme="light"] [class*="bg-gradient-to"] .text-white\/80,
+[data-theme="light"] [class*="bg-gradient-to"].text-white\/80 {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* bg と border / text で同じシェードを共有しているものの調整 */
+[data-theme="light"] .border-gray-700 { border-color: #E7DFD2; }
+[data-theme="light"] .border-gray-800 { border-color: #D8CFC0; }
+[data-theme="light"] .border-gray-100 { border-color: #E7DFD2; }
+[data-theme="light"] .border-slate-700 { border-color: #D8CFC0; }
+[data-theme="light"] .bg-gray-100 { background-color: #EFE8DA; }
+[data-theme="light"] .bg-gray-300 { background-color: #E7DFD2; }
+[data-theme="light"] .bg-gray-400 { background-color: #D8CFC0; }
+
+/* 下部ナビの影をライト向けにソフトに */
+[data-theme="light"] .bottom-nav-dark { box-shadow: 0 -4px 12px rgba(59, 47, 39, 0.08); }
+
+/* SNS投稿ページ (training-summary) は黒背景の投稿画像デザインのため、ライトでも黒のまま */
+[data-theme="light"] .min-h-screen.bg-black.text-white .text-white { color: #FFFFFF; }
+[data-theme="light"] .min-h-screen.bg-black.text-white .text-white\/80 { color: rgba(255, 255, 255, 0.8); }
+[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-400 { color: #9CA3AF; }
+[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-600 { color: #4B5563; }
+[data-theme="light"] .min-h-screen.bg-black.text-white .text-gray-800 { color: #1F2937; }
+[data-theme="light"] .min-h-screen.bg-black.text-white .bg-gray-800 { background-color: #1F2937; }
+[data-theme="light"] .min-h-screen.bg-black.text-white .border-gray-800 { border-color: #374151; }
+
 /* ========== ベーススタイル ========== */
 * {
   margin: 0;

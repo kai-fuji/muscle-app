@@ -25,6 +25,36 @@ ChartJS.register(
   Filler
 )
 
+// ==== テーマ連動ヘルパー (CSS変数から色を解決・dark既定値=従来値) ====
+export function themeColor(varName, fallback) {
+  if (typeof window === 'undefined') return fallback
+  const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+  return v || fallback
+}
+
+// 従来のリテラルカラーをテーマ連動の変数にマッピング (dark値=リテラルと同一)
+const COLOR_VAR_MAP = {
+  '#00D9FF': '--accent-cyan',
+  '#FF9500': '--accent-orange',
+  '#5E5CE6': '--accent-purple',
+  '#FF375F': '--accent-pink',
+  '#32D74B': '--accent-green',
+  '#FF453A': '--accent-red',
+  '#FF6B6B': '--chart-red-soft',
+  '#10B981': '--chart-green',
+  '#FFA07A': '--chart-salmon',
+  '#4ECDC4': '--chart-teal',
+  '#F38181': '--chart-rose',
+  '#AA96DA': '--chart-lavender',
+  '#95E1D3': '--chart-mint',
+  '#9CA3AF': '--text-secondary',
+}
+
+export function resolveColor(color) {
+  const varName = COLOR_VAR_MAP[color]
+  return varName ? themeColor(varName, color) : color
+}
+
 export default function Chart({ 
   data, 
   labels, 
@@ -34,6 +64,9 @@ export default function Chart({
   multiAxis = false,
   chartType = 'line' // 'line' or 'mixed'
 }) {
+  // テーマ連動: 線色をCSS変数から解決
+  const resolvedColor = resolveColor(color)
+
   // datasetsが指定されている場合はそれを使用、なければ従来通りの単一データセット
   const chartData = datasets ? {
     labels,
@@ -44,15 +77,15 @@ export default function Chart({
       {
         label: title,
         data,
-        borderColor: color,
-        backgroundColor: `${color}30`,
+        borderColor: resolvedColor,
+        backgroundColor: `${resolvedColor}30`,
         borderWidth: 3,
         tension: 0.4,
         fill: true,
         pointRadius: 4,
         pointHoverRadius: 6,
-        pointBackgroundColor: color,
-        pointBorderColor: '#000',
+        pointBackgroundColor: resolvedColor,
+        pointBorderColor: themeColor('--chart-point-border', '#000'),
         pointBorderWidth: 2,
       },
     ],
@@ -65,7 +98,7 @@ export default function Chart({
         display: false,
       },
       ticks: {
-        color: '#8E8E93',
+        color: themeColor('--text-secondary', '#8E8E93'),
         font: {
           size: 12,
         },
@@ -76,11 +109,11 @@ export default function Chart({
       display: true,
       position: 'left',
       grid: {
-        color: '#2C2C2E',
+        color: themeColor('--chart-grid', '#2C2C2E'),
         borderDash: [5, 5],
       },
       ticks: {
-        color: '#8E8E93',
+        color: themeColor('--text-secondary', '#8E8E93'),
         font: {
           size: 12,
         },
@@ -94,7 +127,7 @@ export default function Chart({
         drawOnChartArea: false,
       },
       ticks: {
-        color: '#8E8E93',
+        color: themeColor('--text-secondary', '#8E8E93'),
         font: {
           size: 12,
         },
@@ -106,7 +139,7 @@ export default function Chart({
         display: false,
       },
       ticks: {
-        color: '#8E8E93',
+        color: themeColor('--text-secondary', '#8E8E93'),
         font: {
           size: 12,
         },
@@ -114,11 +147,11 @@ export default function Chart({
     },
     y: {
       grid: {
-        color: '#2C2C2E',
+        color: themeColor('--chart-grid', '#2C2C2E'),
         borderDash: [5, 5],
       },
       ticks: {
-        color: '#8E8E93',
+        color: themeColor('--text-secondary', '#8E8E93'),
         font: {
           size: 12,
         },
@@ -133,7 +166,7 @@ export default function Chart({
       legend: {
         display: datasets ? true : false,
         labels: {
-          color: '#FFFFFF',
+          color: themeColor('--text-primary', '#FFFFFF'),
           font: {
             size: 12,
           },
